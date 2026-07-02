@@ -1,0 +1,1262 @@
+<title>类 Claude Code 框架：能力、演进与从零构建</title>
+<style>
+  :root{
+    --navy:#0C1B2A; --navy-2:#12263A; --ink:#14202B; --ink-soft:#33424F;
+    --paper:#EEF0F3; --surface:#FBFCFD; --surface-2:#F4F6F8;
+    --line:#D5DBE2; --line-soft:#E4E8ED; --muted:#5C6875; --muted-2:#7C8894;
+    --amber:#E8912A; --amber-deep:#C56E12; --amber-glow:#F5B458;
+    --ok:#2F9E44; --warn:#C77700; --danger:#D8412F;
+    --maxw:1120px; --read:70ch;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;
+    --mono:"SFMono-Regular","Cascadia Code","JetBrains Mono","Fira Code",ui-monospace,Consolas,"Liberation Mono",monospace;
+    --sh-1:0 1px 2px rgba(12,27,42,.06),0 2px 8px rgba(12,27,42,.05);
+    --sh-2:0 4px 14px rgba(12,27,42,.10),0 12px 36px rgba(12,27,42,.08);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:var(--amber-glow);color:var(--navy)}
+  a{color:var(--amber-deep);text-decoration:none}
+  a:hover{text-decoration:underline}
+  :focus-visible{outline:2.5px solid var(--amber);outline-offset:2px;border-radius:2px}
+  h1,h2,h3,h4{text-wrap:balance;line-height:1.2;margin:0}
+
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--amber-deep);font-weight:600}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  /* ---------- HERO ---------- */
+  .hero{background:var(--navy);color:#E9EEF3;position:relative;overflow:hidden;
+    border-bottom:1px solid #071320}
+  .hero::before{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+    background:
+      radial-gradient(900px 380px at 78% -8%,rgba(232,145,42,.16),transparent 60%),
+      radial-gradient(700px 320px at 8% 108%,rgba(232,145,42,.07),transparent 60%)}
+  .hero-grid-lines{position:absolute;inset:0;opacity:.16;pointer-events:none;
+    background-image:linear-gradient(rgba(150,180,210,.18) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(150,180,210,.18) 1px,transparent 1px);
+    background-size:44px 44px;
+    -webkit-mask-image:radial-gradient(circle at 50% 40%,#000,transparent 78%);
+    mask-image:radial-gradient(circle at 50% 40%,#000,transparent 78%)}
+  .hero .wrap{position:relative;padding-top:64px;padding-bottom:56px}
+  .hero-top{display:flex;justify-content:space-between;align-items:center;gap:16px;
+    color:#7f93a6;font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+    border-bottom:1px solid rgba(150,180,210,.16);padding-bottom:16px;margin-bottom:40px}
+  .hero-top .dot{color:var(--amber)}
+  .hero-layout{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+  @media (max-width:880px){.hero-layout{grid-template-columns:1fr;gap:36px}}
+  .hero h1{font-size:clamp(30px,5vw,50px);font-weight:800;letter-spacing:-.02em;color:#fff;margin:14px 0 0}
+  .hero h1 .amber{color:var(--amber-glow)}
+  .hero-lead{color:#B8C6D4;font-size:clamp(15px,1.6vw,18px);margin:22px 0 0;max-width:52ch}
+  .hero-lead b{color:#EbF1F6;font-weight:600}
+  .hero-stats{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:30px;
+    padding-top:24px;border-top:1px solid rgba(150,180,210,.16)}
+  .stat .n{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--amber-glow);
+    font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12.5px;color:#8ea1b3;letter-spacing:.02em}
+
+  /* loop diagram */
+  .loopwrap{display:flex;justify-content:center;align-items:center}
+  .loop{width:100%;max-width:420px;height:auto}
+  .loop .node rect{fill:rgba(15,32,49,.72);stroke:rgba(150,180,210,.35);stroke-width:1.2}
+  .loop .node.on rect{stroke:var(--amber);filter:drop-shadow(0 0 7px rgba(232,145,42,.55))}
+  .loop .node text{fill:#cdd8e3;font-family:var(--mono);font-weight:600}
+  .loop .node.on text{fill:var(--amber-glow)}
+  .loop .node .sub{fill:#7f93a6;font-family:var(--mono);font-weight:400}
+  .loop .edge{fill:none;stroke:rgba(150,180,210,.4);stroke-width:1.6}
+  .loop .edge.dash{stroke-dasharray:4 5}
+  .loop .pulse{fill:var(--amber)}
+  .loop .center{fill:#8ea1b3;font-family:var(--mono);letter-spacing:.14em}
+  .loop .exit{fill:var(--amber-glow);font-family:var(--mono);font-weight:600}
+  @media (prefers-reduced-motion:reduce){.loop .node{}}
+
+  /* ---------- STICKY NAV ---------- */
+  nav.toc{position:sticky;top:0;z-index:40;background:rgba(238,240,243,.86);
+    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex;align-items:center;gap:4px;height:52px;overflow-x:auto;scrollbar-width:none}
+  nav.toc .wrap::-webkit-scrollbar{display:none}
+  nav.toc .brand{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--navy);
+    margin-right:14px;white-space:nowrap;letter-spacing:.02em}
+  nav.toc .brand .b{color:var(--amber-deep)}
+  nav.toc a{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:7px 11px;
+    border-radius:6px;white-space:nowrap;letter-spacing:.02em}
+  nav.toc a:hover{background:var(--surface-2);color:var(--ink);text-decoration:none}
+  nav.toc a.active{background:var(--navy);color:#fff}
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:68px 0}
+  section+section{border-top:1px solid var(--line)}
+  .sec-head{margin-bottom:36px}
+  .sec-head .kick{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .sec-head .idx{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--navy);
+    background:var(--amber);padding:3px 9px;border-radius:5px;letter-spacing:.05em}
+  .sec-head h2{font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.015em}
+  .sec-head p{color:var(--muted);max-width:var(--read);margin:14px 0 0;font-size:16.5px}
+  .prose{max-width:var(--read)}
+  .prose p{margin:0 0 16px}
+
+  /* code block */
+  pre{background:var(--navy);color:#d7e0ea;font-family:var(--mono);font-size:13px;line-height:1.7;
+    padding:20px 22px;border-radius:12px;overflow-x:auto;margin:20px 0;box-shadow:var(--sh-1)}
+  pre .c{color:#7f93a6} pre .k{color:var(--amber-glow)} pre .s{color:#8fd0a0}
+  code.inl{font-family:var(--mono);font-size:.9em;background:var(--surface-2);
+    border:1px solid var(--line);padding:1px 6px;border-radius:5px;color:var(--ink)}
+
+  /* generic card */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-1)}
+
+  /* ---------- TIMELINE ---------- */
+  .eras{display:flex;flex-direction:column;gap:0}
+  .era{border-left:2px solid var(--line);padding:0 0 8px 26px;position:relative}
+  .era::before{content:"";position:absolute;left:-8px;top:4px;width:14px;height:14px;border-radius:50%;
+    background:var(--amber);border:3px solid var(--paper);box-shadow:0 0 0 1px var(--amber)}
+  .era-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:6px}
+  .era-head h3{font-size:19px;font-weight:750}
+  .era-span{font-family:var(--mono);font-size:12px;color:var(--navy);background:var(--surface-2);
+    border:1px solid var(--line);padding:2px 9px;border-radius:20px}
+  .era p{color:var(--ink-soft);max-width:var(--read);margin:0 0 18px;font-size:15px}
+  .milestones{display:flex;flex-direction:column;gap:12px;margin:0 0 26px}
+  .ms{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:start}
+  @media (max-width:560px){.ms{grid-template-columns:1fr;gap:2px}}
+  .ms .date{font-family:var(--mono);font-size:12.5px;color:var(--amber-deep);font-weight:600;
+    padding-top:1px;font-variant-numeric:tabular-nums}
+  .ms .m b{font-weight:700}
+  .ms .m span{color:var(--muted);font-size:14px}
+
+  /* ---------- TABS + FRAMEWORK CARDS ---------- */
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+  .tab{font-family:var(--mono);font-size:13px;border:1px solid var(--line);background:var(--surface);
+    color:var(--ink-soft);padding:9px 15px;border-radius:9px;cursor:pointer;letter-spacing:.01em;
+    display:flex;align-items:center;gap:8px;transition:border-color .15s,background .15s}
+  .tab .cnt{font-size:11px;color:var(--muted-2);background:var(--surface-2);border-radius:20px;padding:1px 7px}
+  .tab:hover{border-color:var(--amber)}
+  .tab[aria-selected="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .tab[aria-selected="true"] .cnt{background:rgba(255,255,255,.16);color:#dbe6f0}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+  .panel[hidden]{display:none}
+  .fw{padding:20px;display:flex;flex-direction:column;gap:12px;transition:transform .15s,box-shadow .15s}
+  .fw:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
+  .fw-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .fw-name{font-size:17px;font-weight:750;letter-spacing:-.01em}
+  .fw-vendor{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:3px}
+  .fw-badges{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+  .badge{font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:20px;white-space:nowrap;letter-spacing:.02em}
+  .badge.oss{background:#e5f4ea;color:#1c7a34;border:1px solid #bfe3c9}
+  .badge.closed{background:#fbe9e6;color:#b23524;border:1px solid #f2cabf}
+  .badge.partial{background:#fdf1df;color:#a06405;border:1px solid #f2ddb4}
+  .badge.year{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .fw-one{font-size:14px;color:var(--ink-soft);line-height:1.55}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:11.5px;font-family:var(--mono);background:var(--surface-2);border:1px solid var(--line);
+    color:var(--ink-soft);padding:3px 8px;border-radius:6px}
+  .fw-diff{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:11px}
+  .fw-diff b{color:var(--amber-deep);font-weight:600;font-family:var(--mono);font-size:11px;
+    letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:3px}
+
+  /* ---------- ACCORDION (architecture + roadmap) ---------- */
+  .acc{display:flex;flex-direction:column;gap:12px}
+  details.item{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--sh-1);overflow:hidden}
+  details.item[open]{box-shadow:var(--sh-2);border-color:var(--amber)}
+  details.item>summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;gap:16px;
+    align-items:flex-start}
+  details.item>summary::-webkit-details-marker{display:none}
+  .sum-key{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--navy);
+    background:var(--amber);min-width:34px;height:34px;border-radius:8px;display:flex;
+    align-items:center;justify-content:center;flex-shrink:0}
+  .sum-body{flex:1;min-width:0}
+  .sum-title{font-size:18px;font-weight:750;letter-spacing:-.01em}
+  .sum-sub{color:var(--muted);font-size:14px;margin-top:4px}
+  .sum-caret{color:var(--muted-2);font-family:var(--mono);font-size:18px;transition:transform .2s;line-height:1}
+  details.item[open] .sum-caret{transform:rotate(45deg)}
+  .item-detail{padding:0 22px 22px 22px;border-top:1px solid var(--line-soft);margin-top:2px}
+  .item-detail>*:first-child{margin-top:20px}
+  .blk{margin:0 0 20px}
+  .blk h4{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--amber-deep);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .blk h4::before{content:"";width:6px;height:6px;background:var(--amber);border-radius:50%}
+  .blk p{margin:0;color:var(--ink-soft);font-size:14.5px;max-width:var(--read)}
+  ul.clean{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+  ul.clean li{position:relative;padding-left:20px;color:var(--ink-soft);font-size:14px;max-width:78ch}
+  ul.clean li::before{content:"▸";position:absolute;left:0;color:var(--amber-deep);font-size:12px;top:1px}
+  ul.risk li::before{content:"✕";color:var(--danger);font-weight:700}
+  ul.ok li::before{content:"✓";color:var(--ok);font-weight:700}
+  .mvp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  @media (max-width:640px){.mvp{grid-template-columns:1fr}}
+  .mvp .box{border:1px solid var(--line);border-radius:11px;padding:15px 16px;background:var(--surface-2)}
+  .mvp .box.mature{background:#fdf6ec;border-color:#f0ddba}
+  .mvp .box .t{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    font-weight:700;margin-bottom:8px}
+  .mvp .box.mvp-b .t{color:var(--muted)} .mvp .box.mature .t{color:var(--amber-deep)}
+  .mvp .box p{font-size:13.5px;color:var(--ink-soft);margin:0}
+  .decisions{display:flex;flex-direction:column;gap:10px}
+  .dec{border-left:3px solid var(--amber);background:var(--surface-2);padding:10px 14px;border-radius:0 8px 8px 0;
+    font-size:13.5px;color:var(--ink-soft)}
+
+  /* roadmap specific */
+  .rm-goal{background:var(--navy);color:#dbe6f0;border-radius:11px;padding:14px 16px;font-size:14px;margin-bottom:18px}
+  .rm-goal b{color:var(--amber-glow)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media (max-width:700px){.two{grid-template-columns:1fr}}
+  .learn{background:#fdf6ec;border:1px solid #f0ddba;border-radius:11px;padding:14px 16px;
+    font-size:13.5px;color:#6b4a10;margin-bottom:18px}
+  .learn b{color:var(--amber-deep)}
+
+  /* principles / eval */
+  .princ{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .pr{padding:18px;display:flex;gap:13px;align-items:flex-start}
+  .pr .no{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber-deep);flex-shrink:0}
+  .pr p{margin:0;font-size:14px;color:var(--ink-soft)}
+  .pr p b{color:var(--ink);font-weight:700}
+  .eval{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:760px){.eval{grid-template-columns:1fr}}
+  .ev{padding:20px;border-top:3px solid var(--amber)}
+  .ev h4{font-size:16px;font-weight:750;margin-bottom:6px}
+  .ev .tag{font-family:var(--mono);font-size:11px;color:var(--amber-deep);letter-spacing:.06em}
+  .ev p{font-size:13.5px;color:var(--ink-soft);margin:10px 0 0}
+
+  /* footer */
+  footer{background:var(--navy);color:#9db0c2;padding:44px 0 52px;font-size:13px}
+  footer .wrap{display:flex;flex-direction:column;gap:14px}
+  footer h4{color:#fff;font-size:15px;font-family:var(--mono)}
+  footer .meta{display:flex;flex-wrap:wrap;gap:8px 22px;font-family:var(--mono);font-size:12px;color:#7f93a6}
+  footer .cav{max-width:74ch;color:#8ea1b3;line-height:1.6}
+  footer .cav b{color:#cdd8e3}
+</style>
+
+<div class="page">
+<header class="hero">
+  <div class="hero-grid-lines"></div>
+  <div class="wrap">
+    <div class="hero-top">
+      <span>AGENTIC&nbsp;CODING&nbsp;FRAMEWORKS <span class="dot">◆</span> 深度调研</span>
+      <span>2023 → 2026</span>
+    </div>
+    <div class="hero-layout">
+      <div>
+        <div class="eyebrow">类 Claude Code 框架 · 全景与构建指南</div>
+        <h1>让模型长出<span class="amber">手和眼睛</span>的那层代码</h1>
+        <p class="hero-lead">一个只会"描述"如何修 bug 的大模型，只有当一个<b>循环</b>让它能打开文件、跑测试、读报错、再重试时，才成为智能体。2026 年行业的共识很直白：<b>真正的产品是 harness（外壳），不是模型。</b>本页拆解这层外壳——它的演进史、主流框架能力，以及如何从零开始、一步步把它构建出来。</p>
+        <div class="hero-stats">
+          <div class="stat"><div class="n">35</div><div class="l">主流框架 / SDK</div></div>
+          <div class="stat"><div class="n">6</div><div class="l">核心架构组件</div></div>
+          <div class="stat"><div class="n">9</div><div class="l">阶段构建路线</div></div>
+          <div class="stat"><div class="n">5</div><div class="l">发展时代</div></div>
+        </div>
+      </div>
+      <div class="loopwrap">
+        <svg class="loop" viewBox="0 0 420 340" role="img" aria-label="Agent Loop 示意：Prompt 进入模型，模型调用工具，观察结果回流，无工具调用则结束">
+          <!-- edges (clockwise loop) -->
+          <path class="edge" id="e1" d="M120 78 H300"/>
+          <path class="edge" id="e2" d="M330 104 V150"/>
+          <path class="edge" id="e3" d="M300 196 H190"/>
+          <path class="edge dash" id="e4" d="M112 178 C70 172 70 118 104 96" />
+          <!-- arrowheads -->
+          <path class="pulse" d="M300 72 l12 6 -12 6 z"/>
+          <path class="pulse" d="M324 150 l6 12 6 -12 z"/>
+          <path class="pulse" d="M190 190 l-12 6 12 6 z"/>
+          <path class="pulse" d="M108 96 l-2 13 11 -6 z" opacity=".7"/>
+          <!-- exit -->
+          <path class="edge" d="M330 178 h54"/>
+          <path class="pulse" d="M384 172 l12 6 -12 6 z"/>
+          <text class="exit" x="336" y="205" font-size="11">no tool calls</text>
+          <text class="exit" x="352" y="219" font-size="12">→ 结束</text>
+          <!-- center -->
+          <text class="center" x="210" y="150" text-anchor="middle" font-size="11">AGENT</text>
+          <text class="center" x="210" y="166" text-anchor="middle" font-size="11">LOOP</text>
+          <!-- nodes -->
+          <g class="node on" data-i="0"><rect x="24" y="52" width="96" height="52" rx="9"/>
+            <text x="72" y="78" text-anchor="middle" font-size="13">PROMPT</text>
+            <text class="sub" x="72" y="93" text-anchor="middle" font-size="9.5">用户请求</text></g>
+          <g class="node" data-i="1"><rect x="300" y="52" width="96" height="52" rx="9"/>
+            <text x="348" y="78" text-anchor="middle" font-size="13">MODEL</text>
+            <text class="sub" x="348" y="93" text-anchor="middle" font-size="9.5">推理·决策</text></g>
+          <g class="node" data-i="2"><rect x="300" y="150" width="96" height="52" rx="9"/>
+            <text x="348" y="176" text-anchor="middle" font-size="12">TOOL CALLS</text>
+            <text class="sub" x="348" y="191" text-anchor="middle" font-size="9.5">读·写·跑·搜</text></g>
+          <g class="node" data-i="3"><rect x="94" y="150" width="96" height="52" rx="9"/>
+            <text x="142" y="176" text-anchor="middle" font-size="12">OBSERVE</text>
+            <text class="sub" x="142" y="191" text-anchor="middle" font-size="9.5">结果回流</text></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="目录">
+  <div class="wrap">
+    <span class="brand">harness<span class="b">.build</span></span>
+    <a href="#model" class="toclink">核心心智</a>
+    <a href="#history" class="toclink">发展史</a>
+    <a href="#landscape" class="toclink">框架全景</a>
+    <a href="#arch" class="toclink">架构原理</a>
+    <a href="#roadmap" class="toclink">构建路线图</a>
+    <a href="#iterate" class="toclink">迭代与评估</a>
+  </div>
+</nav>
+
+<section id="model">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">00</span><span class="eyebrow">先建立一个心智模型</span></div>
+      <h2>一切都围绕一个循环</h2>
+      <p>所有这类框架——无论装在终端、编辑器还是云端——本质都是同一个 ReAct 式循环：把不断增长的对话发给模型，执行它请求的工具，把结果追加回去，再重复，直到模型不再调用工具、直接给出文字答复为止。理解这个循环，后面的一切（工具、上下文、权限、多智能体）都只是给它做加固。</p>
+    </div>
+    <div class="prose">
+      <p><b>模型负责思考，harness 负责驾驶。</b>模型是无状态的——它不记得上一轮，也碰不到你的文件系统。是外层的循环代码给了它记忆（把历史全量重发）、给了它双手（工具）、给了它安全边界（权限与沙箱），并决定何时停下。同一个聊天模型，仅仅因为一个循环不断带着新观察结果去重新调用它，就"变成"了智能体。</p>
+      <pre><span class="c"># 循环骨架——production 工具的内核也就是这几行</span>
+messages = [system, user_prompt]
+<span class="k">while</span> True:
+    resp = model.create(messages, tools=tool_schemas)   <span class="c"># 全量历史每轮重发</span>
+    messages.append(resp.assistant_message)             <span class="c"># text + tool_use 块</span>
+    calls = [b <span class="k">for</span> b <span class="k">in</span> resp.content <span class="k">if</span> b.type==<span class="s">"tool_use"</span>]
+    <span class="k">if</span> not calls: <span class="k">break</span>                              <span class="c"># ★ 主终止：没有工具调用 = 完成</span>
+    results = [run_tool(c) <span class="k">for</span> c <span class="k">in</span> calls]           <span class="c"># 每个 tool_use 必须有对应 tool_result</span>
+    messages.append(user_message(results))              <span class="c"># 观察结果作为 user 角色回流</span>
+    <span class="k">if</span> turns >= max_turns: <span class="k">break</span>                    <span class="c"># ★ 副终止：轮数 / 预算 / 时钟兜底</span></pre>
+      <p>三个反直觉但关键的事实，会贯穿整份指南：<b>①</b> 终止是隐式的——模型给出一轮"没有工具调用"的回复即代表结束，默认没有显式的"完成"信号；<b>②</b> 工具结果以 <code class="inl">user</code> 角色回流（"环境以用户身份说话"）；<b>③</b> 每一个 <code class="inl">tool_use</code> 都必须在下一条消息里有 id 严格匹配的 <code class="inl">tool_result</code>，漏一个或错位就是硬报错。这三点看似琐碎，却是 80% 新手 loop 崩溃的根因。</p>
+    </div>
+  </div>
+</section>
+
+<section id="history">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">01</span><span class="eyebrow">2023 → 2026 · 三年演进</span></div>
+      <h2>从"放它自己跑"到"实验室的第一方产品"</h2>
+      <p>这类工具的历史，是一条从狂热的全自主实验，收敛到有纪律的工程实践，再被前沿实验室收编为第一方产品、并最终平台化的曲线。下面按 5 个时代梳理，每个时代下是关键里程碑。</p>
+    </div>
+    <div class="eras">
+
+      <div class="era">
+        <div class="era-head"><h3>自主智能体淘金热</h3><span class="era-span">2023 · 3–12 月</span></div>
+        <p>GPT-4 点燃了一切。AutoGPT、BabyAGI、GPT-Engineer 这些业余项目证明了"给 LLM 一个目标让它自己循环"是可行的，狂揽关注度，也暴露了死循环与烧 token 的通病。与此同时，Aider 与 Cursor 确立了更有纪律的"AI 结对程序员"与"AI 原生 IDE"路线——这两条路才真正活了下来。</p>
+        <div class="milestones">
+          <div class="ms"><div class="date">2023-03-14</div><div class="m"><b>OpenAI 发布 GPT-4</b> <span>——让多步自主智能体第一次变得可行，当年所有实验都建立在它之上。</span></div></div>
+          <div class="ms"><div class="date">2023-03</div><div class="m"><b>Cursor 首发</b> <span>——首个 AI 原生 IDE（VS Code 分支），把 AI 嵌进编辑循环，开创后来估值数百亿的品类。</span></div></div>
+          <div class="ms"><div class="date">2023-03-28</div><div class="m"><b>BabyAGI</b> <span>——约 105 行的任务驱动智能体，被数千人 fork，普及了"规划-执行-再排序"模板。</span></div></div>
+          <div class="ms"><div class="date">2023-03-30</div><div class="m"><b>AutoGPT</b> <span>——首个爆红的全自主智能体，数月冲上 10 万+ star，定义了大众对"自主智能体"的想象。</span></div></div>
+          <div class="ms"><div class="date">2023-04</div><div class="m"><b>Aider</b> <span>——终端 AI 结对程序员，深度 git 集成，主张"走一步、等反馈"的人在环内哲学。</span></div></div>
+        </div>
+      </div>
+
+      <div class="era">
+        <div class="era-head"><h3>基准测试与"第一个 AI 软件工程师"</h3><span class="era-span">2024 · 1–8 月</span></div>
+        <p>评估体系成熟了：SWE-bench（及后来的 Verified）给了全行业一块真实世界的记分牌。Cognition 的 Devin 掀起"端到端自主工程师"的炒作，而 SWE-agent 与开源 OpenDevin 则证明——驱动性能的是结构化的"智能体-计算机接口"，不只是更大的模型。</p>
+        <div class="milestones">
+          <div class="ms"><div class="date">2024-01-16</div><div class="m"><b>SWE-bench 入选 ICLR 2024</b> <span>——2294 个真实 GitHub issue，把评估从玩具题拉到真实工程问题。</span></div></div>
+          <div class="ms"><div class="date">2024-03-12</div><div class="m"><b>Devin 亮相 + OpenDevin 开源</b> <span>——"首个 AI 软件工程师"引爆热度，开源社区同日给出答案。</span></div></div>
+          <div class="ms"><div class="date">2024-04-02</div><div class="m"><b>SWE-agent（普林斯顿/斯坦福）</b> <span>——提出 Agent-Computer Interface（ACI）概念，被誉为编码智能体里被模仿最多的一个想法。</span></div></div>
+          <div class="ms"><div class="date">2024-07-10</div><div class="m"><b>Claude Dev（后改名 Cline）上架</b> <span>——把自主编码循环搬进编辑器，且每一步都显式人工批准，开创透明的 in-IDE 智能体范式。</span></div></div>
+          <div class="ms"><div class="date">2024-08-13</div><div class="m"><b>SWE-bench Verified</b> <span>——人工校验的 500 题子集，成为厂商引用的事实标准指标。</span></div></div>
+        </div>
+      </div>
+
+      <div class="era">
+        <div class="era-head"><h3>智能体进入编辑器，并拿到协议</h3><span class="era-span">2024-07 → 2025 初</span></div>
+        <p>智能体从独立脚本搬进了开发者真正用的工具：Cline、Continue 把透明、人在环内的智能体嵌进 VS Code；OpenDevin 成长为有商业背书的 OpenHands 平台。Anthropic 的 MCP 标准化了"智能体如何连接工具与数据"，迅速成为全行业的互操作层。</p>
+        <div class="milestones">
+          <div class="ms"><div class="date">2024-07-24</div><div class="m"><b>OpenHands / OpenDevin 论文</b> <span>——正式提出"通用软件开发智能体"的开放平台。</span></div></div>
+          <div class="ms"><div class="date">2024-11-25</div><div class="m"><b>Anthropic 发布 MCP（模型上下文协议）</b> <span>——连接智能体与工具/数据的开放标准，一年内被 OpenAI、Google、Zed、Replit 等采纳，成为"智能体工具的 USB-C"。</span></div></div>
+          <div class="ms"><div class="date">2024 底</div><div class="m"><b>OpenDevin 更名 OpenHands</b> <span>——从 Devin 致敬品成长为被专业维护、商业背书的平台。</span></div></div>
+        </div>
+      </div>
+
+      <div class="era">
+        <div class="era-head"><h3>终端原生的"实验室大战"</h3><span class="era-span">2025 · 2–6 月</span></div>
+        <p>三大前沿实验室亲自下场，把终端变成了智能体的首要载体：Anthropic 的 Claude Code、OpenAI 的 Codex CLI、Google 的 Gemini CLI 在约四个月内相继发布——一个能干活的编码智能体，从此成了每家实验室的第一方产品。</p>
+        <div class="milestones">
+          <div class="ms"><div class="date">2025-02-24</div><div class="m"><b>Claude Code（研究预览）</b> <span>——伴随 Claude 3.7 Sonnet 发布，开启终端原生编码智能体时代，成为竞品竞相对标的模板（5-22 GA）。</span></div></div>
+          <div class="ms"><div class="date">2025-03</div><div class="m"><b>OpenAI 开源 Codex CLI + Agents SDK</b> <span>——轻量本地终端智能体（后用 Rust 重写）；Agents SDK 以显式 handoff 取代实验性的 Swarm。</span></div></div>
+          <div class="ms"><div class="date">2025-04</div><div class="m"><b>Google 推出 Agent Development Kit（ADK）</b> <span>——模型无关、多语言、原生 agent-to-agent，把"造智能体"当普通软件工程来做。</span></div></div>
+          <div class="ms"><div class="date">2025-06-25</div><div class="m"><b>Google 发布 Gemini CLI</b> <span>——补齐三大实验室阵容，坐实"终端是智能体首要载体"。</span></div></div>
+        </div>
+      </div>
+
+      <div class="era">
+        <div class="era-head"><h3>通过 Agent SDK 走向平台化</h3><span class="era-span">2025-03 → 2026</span></div>
+        <p>前沿从"发布智能体"转向"发布造智能体的框架"：OpenAI Agents SDK、Google ADK、Anthropic Claude Agent SDK（带 subagents、hooks、Skills）把编码智能体变成可扩展平台；配合 MCP 与云端/网页交付，智能体成为可嵌入、随时在线的服务。</p>
+        <div class="milestones">
+          <div class="ms"><div class="date">2025-09-29</div><div class="m"><b>Claude Agent SDK</b> <span>——伴随 Sonnet 4.5，从 Claude Code SDK 扩展而来，加入 subagents、生命周期 hooks 与 Skills，把"给智能体一台计算机"产品化给第三方。</span></div></div>
+          <div class="ms"><div class="date">2025-10-20</div><div class="m"><b>Claude Code 上网页</b> <span>——编码智能体走出终端进入浏览器，从本地工具变为随时可用的云服务。</span></div></div>
+          <div class="ms"><div class="date">2026-03</div><div class="m"><b>Claude Code 源码泄露</b> <span>——让 harness 的内部工程细节（system prompt 分层、bash 校验、压缩策略等）大量公开，坐实"harness 才是产品"的共识。</span></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+<section id="landscape">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">02</span><span class="eyebrow">37 个框架 · 4 大类别</span></div>
+      <h2>框架全景：谁在做，能力如何，用于什么</h2>
+      <p>同一个 agent loop，被包装成四种截然不同的产品形态。切换下面的标签查看每一类；每张卡片给出定位、代表能力、差异化，以及开源状态与首发时间。</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="框架类别">
+      <button class="tab" role="tab" aria-selected="true" data-cat="cli">终端原生 CLI <span class="cnt">9</span></button>
+      <button class="tab" role="tab" aria-selected="false" data-cat="ide">编辑器 / IDE 集成 <span class="cnt">7</span></button>
+      <button class="tab" role="tab" aria-selected="false" data-cat="swe">自主 SWE 智能体 <span class="cnt">8</span></button>
+      <button class="tab" role="tab" aria-selected="false" data-cat="sdk">构建用 SDK / 框架 <span class="cnt">11</span></button>
+    </div>
+
+    <div class="panel" data-cat="cli">
+      <div class="fgrid">
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Claude Code</div><div class="fw-vendor">Anthropic</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2025-02</span></div></div>
+          <div class="fw-one">住在终端里的旗舰编码智能体：自动读懂整个代码库，执行多文件改动、跑测试、走 git/PR 流程。</div>
+          <div class="chips"><span class="chip">Agent Teams 并行</span><span class="chip">Skills/Hooks/子智能体</span><span class="chip">MCP</span><span class="chip">终端·IDE·桌面·网页</span></div>
+          <div class="fw-diff"><b>差异化</b>先发者，扩展生态最成熟（Skills/Hooks/Subagents/Plugins/Agent SDK），紧耦合前沿 Claude 模型；基准领先（SWE-bench Verified ~80.8%）。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Codex CLI</div><div class="fw-vendor">OpenAI</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2025 中</span></div></div>
+          <div class="fw-one">Rust 打造的开源终端智能体，本地读/改/跑代码并带内核级沙箱，可把长任务委派到云端。</div>
+          <div class="chips"><span class="chip">内核级 OS 沙箱</span><span class="chip">apply_patch (V4A)</span><span class="chip">云端委派</span><span class="chip">图像输入</span></div>
+          <div class="fw-diff"><b>差异化</b>唯一在内核级(Seatbelt/Landlock)而非应用层强制安全的主流智能体；发布节奏极凶(700+ 版本)，~300 万周活。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Gemini CLI</div><div class="fw-vendor">Google</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2025-06</span></div></div>
+          <div class="fw-one">把 Gemini 带进 shell 的开源终端智能体，内建 Google 搜索接地、超大上下文窗口。</div>
+          <div class="chips"><span class="chip">内建 Web 搜索</span><span class="chip">Plan mode</span><span class="chip">子智能体</span><span class="chip">1M context</span></div>
+          <div class="fw-diff"><b>差异化</b>唯一开箱内建 Web 搜索的终端智能体；不过 2026 年中 Google 正把消费端迁往闭源的 Antigravity CLI。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Aider</div><div class="fw-vendor">Paul Gauthier / 社区</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2023</span></div></div>
+          <div class="fw-one">极简、厂商中立的终端结对程序员：直接改盘上文件，每次改动都是一个原子 git commit。</div>
+          <div class="chips"><span class="chip">git 为真相源</span><span class="chip">architect/editor 双模型</span><span class="chip">repo map</span><span class="chip">任意模型</span></div>
+          <div class="fw-diff"><b>差异化</b>刻意极简、厂商中立、git 即真相源的哲学；architect/editor 双模型分工是独特的准确率技巧。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">opencode</div><div class="fw-vendor">Anomaly（原 SST）</div></div>
+            <div class="fw-badges"><span class="badge oss">MIT</span><span class="badge year">2025</span></div></div>
+          <div class="fw-one">终端原生开源智能体，深度 LSP 代码智能 + 客户端-服务器架构，支持 75+ 供应商或纯本地模型。</div>
+          <div class="chips"><span class="chip">深度 LSP 诊断回流</span><span class="chip">Build/Plan 多智能体</span><span class="chip">client-server 远程</span></div>
+          <div class="fw-diff"><b>差异化</b>独有的深度 LSP 集成（真实类型/签名/编译器诊断喂回循环自纠错），加远程 client-server 架构与极致模型灵活度。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Amp（Neo）</div><div class="fw-vendor">Sourcegraph</div></div>
+            <div class="fw-badges"><span class="badge closed">托管</span><span class="badge year">2026-05</span></div></div>
+          <div class="fw-one">面向大型代码库长跨度自主执行的前沿 CLI 智能体，带 Deep 深度研究模式与可组合子智能体。</div>
+          <div class="chips"><span class="chip">Deep 扩展推理</span><span class="chip">Oracle/Librarian 子智能体</span><span class="chip">托管路由</span></div>
+          <div class="fw-diff"><b>差异化</b>建立在 Sourcegraph 成熟的代码搜索/索引平台上（上下文引擎优势），独特的扩展推理 Deep 模式 + 托管多模型路由。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Charm Crush</div><div class="fw-vendor">Charm</div></div>
+            <div class="fw-badges"><span class="badge oss">Go/OSS</span><span class="badge year">2025</span></div></div>
+          <div class="fw-one">Go 单二进制、BYOK 的终端编码智能体，主打精致 TUI、广泛供应商与超广跨平台。</div>
+          <div class="chips"><span class="chip">最精致 TUI</span><span class="chip">单二进制多平台</span><span class="chip">纯 BYOK</span><span class="chip">LSP + MCP</span></div>
+          <div class="fw-diff"><b>差异化</b>品类里最精致的 TUI、单二进制跨平台（含 *BSD/Android）、纯 BYOK 立场；超大重构时规划循环易漂移。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Qwen Code</div><div class="fw-vendor">阿里 · Qwen</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2025-07</span></div></div>
+          <div class="fw-one">阿里开源终端智能体，原 fork 自 Gemini CLI，现独立成多协议框架，专为开源权重 Qwen3-Coder 调优。</div>
+          <div class="chips"><span class="chip">开源权重模型</span><span class="chip">Auto-Memory/Skills</span><span class="chip">IM 机器人/守护进程</span></div>
+          <div class="fw-diff"><b>差异化</b>押注"开放智能体 CLI + 完全开源可自托管的 Qwen 编码模型"共同演进（无 API 费、无锁定），载体极广。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Warp Agent Mode</div><div class="fw-vendor">Warp</div></div>
+            <div class="fw-badges"><span class="badge partial">source-available</span><span class="badge year">2025-26</span></div></div>
+          <div class="fw-one">Rust、GPU 加速的"智能体开发环境(ADE)"，自然语言驱动终端，另有 Oz 云智能体与 BYO-agent 托管。</div>
+          <div class="chips"><span class="chip">多智能体多线程</span><span class="chip">Oz 云智能体</span><span class="chip">托管其它 CLI 智能体</span></div>
+          <div class="fw-diff"><b>差异化</b>自我定位为"智能体开发环境"而非 AI 终端：本地终端 + 多智能体编排 + BYO-agent 托管 + Oz 云智能体；基准强(Terminal-Bench #1)。</div>
+        </div>
+      </div>
+    </div>
+<div class="panel" data-cat="ide" hidden>
+      <div class="fgrid">
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Cursor</div><div class="fw-vendor">Anysphere</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2023</span></div></div>
+          <div class="fw-one">AI 原生 IDE（VS Code 分支），主界面就是智能体层：Composer 做可审阅多文件编辑，Agent/Cloud Agents 跑长自主任务。</div>
+          <div class="chips"><span class="chip">Composer 多文件编辑</span><span class="chip">Cloud/并行 Agents</span><span class="chip">自研 Composer 模型</span><span class="chip">MCP</span></div>
+          <div class="fw-diff"><b>差异化</b>最成熟的 agent-first 商业编辑器：自研编码模型 + 完善 MCP 管理 UI + 生产级云/并行智能体，企业采用巨大。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Cline</div><div class="fw-vendor">Cline（原 Claude Dev）</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2024-07</span></div></div>
+          <div class="fw-one">开源、人在环内的自主编码智能体，装进你现有的 VS Code，完全 BYOK 且原生 MCP。</div>
+          <div class="chips"><span class="chip">Plan/Act 模式</span><span class="chip">每步批准 + checkpoint</span><span class="chip">30+ 供应商</span><span class="chip">共享 SDK 运行时</span></div>
+          <div class="fw-diff"><b>差异化</b>真正的 VS Code 扩展（非分支）+ 极致透明：每步人工批准、完全模型自由、最早最深的原生 MCP 之一。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Roo Code</div><div class="fw-vendor">Roo Code Inc（Cline 分支）</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2024 末</span></div></div>
+          <div class="fw-one">免费、模型无关的 Cline 分支，标志是多模式系统：Code/Architect/Ask/Debug/自定义 角色智能体各带独立权限与模型。</div>
+          <div class="chips"><span class="chip">Modes 角色系统</span><span class="chip">每模式独立模型</span><span class="chip">Orchestrator 编排</span><span class="chip">Mode Gallery</span></div>
+          <div class="fw-diff"><b>差异化</b>多角色/多人格系统：多个权限受限、各带模型的专职智能体在一个编辑器内编排，比其分叉的 Cline 基座控制更细。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Continue.dev</div><div class="fw-vendor">Continue（2026 被 Cursor 收购）</div></div>
+            <div class="fw-badges"><span class="badge partial">只读归档</span><span class="badge year">2023</span></div></div>
+          <div class="fw-one">开源、模型无关助手：自动补全 + 侧栏聊天 + Agent 模式，跨 VS Code/JetBrains/Neovim 共享一份配置，另有在每个 PR 上跑的 "Continuous AI" CLI。</div>
+          <div class="chips"><span class="chip">三 IDE 共享配置</span><span class="chip">Agent Mode</span><span class="chip">PR 异步智能体</span></div>
+          <div class="fw-diff"><b>差异化</b>完全开源、深度模型无关、一份配置跨三个 IDE，并把智能体推进 PR/CI 流水线——但被收购后开发实质冻结。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Windsurf（Cascade）</div><div class="fw-vendor">Codeium → Cognition</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2024-11</span></div></div>
+          <div class="fw-one">AI 原生 VS Code 分支，Cascade 智能体带一个后台规划智能体持续精炼长期计划，实时代码库感知 + Workflows 配方。</div>
+          <div class="chips"><span class="chip">后台规划智能体</span><span class="chip">Workflows 配方</span><span class="chip">托管模型路由</span><span class="chip">Devin 云智能体</span></div>
+          <div class="fw-diff"><b>差异化</b>规划智能体驱动的 Cascade + 实时代码库感知 + 版本化 Workflows；被 Cognition 收购后与 Devin 云智能体深度整合。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">GitHub Copilot</div><div class="fw-vendor">GitHub（微软）</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2021</span></div></div>
+          <div class="fw-one">同步的 in-IDE Agent Mode（VS Code/JetBrains）+ 异步云编码智能体（把 Issue 变成草稿 PR），扩展完全走 MCP。</div>
+          <div class="chips"><span class="chip">Issue→PR 云智能体</span><span class="chip">Agent Mode（IDE 内）</span><span class="chip">闭环代码审查</span><span class="chip">Copilot CLI</span></div>
+          <div class="fw-diff"><b>差异化</b>与 GitHub 平台/生命周期最深的原生集成——在临时 Actions 环境里 Issue→PR、审查→修复闭环、企业治理，横跨 IDE/CLI/GitHub.com。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Zed AI</div><div class="fw-vendor">Zed Industries</div></div>
+            <div class="fw-badges"><span class="badge oss">GPL</span><span class="badge year">2024</span></div></div>
+          <div class="fw-one">GPU 加速的 Rust 编辑器，Agent Panel 提供任务驱动原生智能体，另可经 ACP 接外部智能体，是首个具备真正原生并行并发的编辑器。</div>
+          <div class="chips"><span class="chip">原生并行智能体</span><span class="chip">ACP 接外部 CLI 智能体</span><span class="chip">MCP(stdio+HTTP)</span><span class="chip">显式权限优先</span></div>
+          <div class="fw-diff"><b>差异化</b>唯一具备真正 OS 级并行并发的编辑器（Rust 架构），加上基于 ACP 的"智能体驾驶舱"可编排外部 CLI 智能体，权限治理显式优先。</div>
+        </div>
+      </div>
+    </div>
+<div class="panel" data-cat="swe" hidden>
+      <div class="fgrid">
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">OpenHands</div><div class="fw-vendor">All Hands AI（原 OpenDevin）</div></div>
+            <div class="fw-badges"><span class="badge oss">MIT</span><span class="badge year">2024-03</span></div></div>
+          <div class="fw-one">开源、模型无关平台，AI 智能体像全职工程师那样在沙箱里写代码、跑命令、查文档、开 PR。</div>
+          <div class="chips"><span class="chip">CodeAct 范式</span><span class="chip">事件流为真相源</span><span class="chip">Docker 沙箱</span><span class="chip">可自托管 VPC</span></div>
+          <div class="fw-diff"><b>差异化</b>领先的全开源、模型无关 Devin 替代品，SWE-bench 数字可复现、零锁定、可在客户 VPC 自托管（配 Sonnet 4.5 达 ~72-77%）。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">SWE-agent</div><div class="fw-vendor">普林斯顿 / 斯坦福</div></div>
+            <div class="fw-badges"><span class="badge oss">研究开源</span><span class="badge year">2024-04</span></div></div>
+          <div class="fw-one">研究系统：给语言模型一套专为 LLM 设计的"智能体-计算机接口(ACI)"，让它自主导航仓库、改代码、跑测试。</div>
+          <div class="chips"><span class="chip">ACI 概念开创者</span><span class="chip">任意基座模型</span><span class="chip">EnIGMA 安全变体</span></div>
+          <div class="fw-diff"><b>差异化</b>提出 ACI——被 2026 年综述称为编码智能体里被模仿最多的想法；证明"精心设计的智能体接口"本身就能大幅提升性能。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Devin</div><div class="fw-vendor">Cognition</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2024-03</span></div></div>
+          <div class="fw-one">全自主云端 AI 工程师：接到任务后自行规划、编码、测试、调试，并在沙箱环境里提交 PR。</div>
+          <div class="chips"><span class="chip">端到端自主</span><span class="chip">沙箱云 VM + 子智能体</span><span class="chip">Slack/Jira 派单</span><span class="chip">ACU 计费</span></div>
+          <div class="fw-diff"><b>差异化</b>开创"AI 软件工程师"品类的先驱产品，定位为"你像同事一样发消息给它"的单个自主工程师；Cognition 估值约 $26B。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">All Hands AI（企业版）</div><div class="fw-vendor">All Hands AI</div></div>
+            <div class="fw-badges"><span class="badge partial">部分开源</span><span class="badge year">2024</span></div></div>
+          <div class="fw-one">建立在开源 OpenHands 之上的公司与托管云/企业产品，把可自托管的自主编码智能体带给企业开发流程。</div>
+          <div class="chips"><span class="chip">OpenHands Cloud</span><span class="chip">K8s 自托管</span><span class="chip">SSO/RBAC 治理</span></div>
+          <div class="fw-diff"><b>差异化</b>把开源做成严肃的企业选项：同一 OpenHands 内核可在 VPC 内自托管（省 API 开销），对标全闭源竞品。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Aider · Architect 模式</div><div class="fw-vendor">Paul Gauthier</div></div>
+            <div class="fw-badges"><span class="badge oss">开源</span><span class="badge year">2024-09</span></div></div>
+          <div class="fw-one">终端优先、git 原生的编码工具，architect 模式把"推理规划"的模型与"精确生成文件编辑"的 editor 模型分开。</div>
+          <div class="chips"><span class="chip">architect/editor 双模型</span><span class="chip">/ask /code /architect</span><span class="chip">原子 commit</span></div>
+          <div class="fw-diff"><b>差异化</b>开创推理/编辑分离，榨取"强推理但格式差"的模型；在其编辑基准上达 SOTA 85%，成本省 30-50%。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Copilot 编码智能体</div><div class="fw-vendor">GitHub（微软）</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2025</span></div></div>
+          <div class="fw-one">GitHub 的异步 SWE 智能体：把 Issue 指派给它，它规划、开 PR、写代码、在 GitHub Actions 里跑测试，然后请你审查。</div>
+          <div class="chips"><span class="chip">Issue 指派</span><span class="chip">Actions 云环境</span><span class="chip">视觉读图</span><span class="chip">审查→修复闭环</span></div>
+          <div class="fw-diff"><b>差异化</b>与 GitHub 平台（Issues/PR/Actions/分支保护/CI）深度原生集成，像个队友无需新界面即可接入。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Jules</div><div class="fw-vendor">Google Labs / DeepMind</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2025</span></div></div>
+          <div class="fw-one">Google 的异步编码工具：任务排队，每个任务起一个隔离的 Gemini 云 VM，实际跑测试并迭代，返回可审阅 PR。</div>
+          <div class="chips"><span class="chip">队列/异步批处理</span><span class="chip">每任务隔离 VM</span><span class="chip">保留网络装依赖</span><span class="chip">并行执行</span></div>
+          <div class="fw-diff"><b>差异化</b>唯一围绕排队/异步批处理而非实时对话构建的主流编码智能体；VM 保留网络可装依赖跑构建，由前沿 Gemini 直接支撑。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Factory（Droids）</div><div class="fw-vendor">Factory AI</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2023</span></div></div>
+          <div class="fw-one">agent-native 企业平台：一队角色专职的自主 Droid 像舰队一样跨桌面/CLI/SDK/云沙箱覆盖整个 SDLC。</div>
+          <div class="chips"><span class="chip">角色专职 Droid 舰队</span><span class="chip">Orchestrator/Worker/Validator</span><span class="chip">Computer Use</span><span class="chip">Missions 长任务</span></div>
+          <div class="fw-diff"><b>差异化</b>一支并行的角色专职 Droid 舰队（而非单个自主工程师）+ "软件工厂"愿景；Terminal-Bench 排名 #1，$1.5B 估值。</div>
+        </div>
+      </div>
+    </div>
+<div class="panel" data-cat="sdk" hidden>
+      <div class="fgrid">
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Claude Agent SDK</div><div class="fw-vendor">Anthropic</div></div>
+            <div class="fw-badges"><span class="badge oss">SDK 开源</span><span class="badge year">2025-09</span></div></div>
+          <div class="fw-one">驱动 Claude Code 的那套库，开放出来让你在同一 harness 上构建会改文件、跑 shell、连 MCP 的自定义智能体。</div>
+          <div class="chips"><span class="chip">内建 Read/Write/Edit/Bash</span><span class="chip">最深 MCP</span><span class="chip">生命周期 hooks</span><span class="chip">Subagents</span></div>
+          <div class="fw-diff"><b>差异化</b>它就是 Claude Code 的 harness 库化——OS 级编码智能体最开箱即用、MCP 最深的路径；代价是锁定 Claude 模型。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">OpenAI Agents SDK</div><div class="fw-vendor">OpenAI</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2026 初</span></div></div>
+          <div class="fw-one">轻量、代码优先的多智能体框架，四个原语：Agents / Tools / Handoffs / Guardrails。</div>
+          <div class="chips"><span class="chip">Handoffs 即工具</span><span class="chip">Guardrails 校验</span><span class="chip">Sandbox Agents</span><span class="chip">供应商无关</span></div>
+          <div class="fw-diff"><b>差异化</b>极简原语 + 代码优先（对比 LangGraph 的声明式图）；handoff-as-tool 与工具级 guardrail 给多智能体流细粒度控制。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">LangGraph</div><div class="fw-vendor">LangChain</div></div>
+            <div class="fw-badges"><span class="badge oss">MIT</span><span class="badge year">2024</span></div></div>
+          <div class="fw-one">把智能体建模成带检查点的状态机：节点是函数，边是转移，状态不可变且每步保存。</div>
+          <div class="chips"><span class="chip">显式图控制流</span><span class="chip">检查点 + 时间旅行</span><span class="chip">interrupt() 人在环内</span><span class="chip">持久内存</span></div>
+          <div class="fw-diff"><b>差异化</b>状态即执行核心 + 检查点/时间旅行，恢复与监控更易；2026 年 70%+ 生产智能体用图结构，最可控但复杂度也最高。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Microsoft Agent Framework</div><div class="fw-vendor">微软</div></div>
+            <div class="fw-badges"><span class="badge oss">SDK 开源</span><span class="badge year">2025-10</span></div></div>
+          <div class="fw-one">AutoGen 与 Semantic Kernel 的统一继承者：多智能体编排 + 企业级状态/中间件/遥测 + 图式工作流。</div>
+          <div class="chips"><span class="chip">sequential/handoff/group chat</span><span class="chip">Python + .NET</span><span class="chip">Azure Foundry 可观测</span></div>
+          <div class="fw-diff"><b>差异化</b>微软官方前向路径，统一两个旧框架；最强的一等 .NET 支持与 Azure 治理（AutoGen 已进入维护模式）。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">AutoGen</div><div class="fw-vendor">微软研究院（维护模式）</div></div>
+            <div class="fw-badges"><span class="badge oss">MIT</span><span class="badge year">2023</span></div></div>
+          <div class="fw-one">开创性的对话式多智能体框架：智能体通过 GroupChat 互相对话、批评、迭代对方的输出。</div>
+          <div class="chips"><span class="chip">GroupChat</span><span class="chip">事件驱动 actor 运行时</span><span class="chip">writer/reviewer 迭代</span></div>
+          <div class="fw-diff"><b>差异化</b>开创对话式多智能体与 GroupChat；2026 年已是维护模式的研究/原型工具，新生产项目导向 MAF。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">CrewAI</div><div class="fw-vendor">CrewAI Inc.</div></div>
+            <div class="fw-badges"><span class="badge oss">MIT</span><span class="badge year">2024</span></div></div>
+          <div class="fw-one">以"角色扮演的智能体团队(Crews)"思考自主协作，加事件驱动的 Flows 做确定性控制。</div>
+          <div class="chips"><span class="chip">角色制 Crews</span><span class="chip">确定性 Flows</span><span class="chip">@persist() 持久化</span><span class="chip">无 LangChain 依赖</span></div>
+          <div class="fw-diff"><b>差异化</b>"团队里的人"心智模型比节点-边更快上手，Flows 补齐生产所需的确定性控制；企业采用强。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Vercel AI SDK</div><div class="fw-vendor">Vercel</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2023</span></div></div>
+          <div class="fw-one">TypeScript AI 工具箱：统一、供应商无关的核心(generateText/streamText) + v6 的 ToolLoopAgent 抽象 + React hooks。</div>
+          <div class="chips"><span class="chip">供应商无关(改两行切换)</span><span class="chip">ToolLoopAgent</span><span class="chip">Zod 结构化输出</span><span class="chip">流式 UI</span></div>
+          <div class="fw-diff"><b>差异化</b>TypeScript 里供应商无关模型访问的事实标准，一等流式/UI 集成；v6 的 ToolLoopAgent 把底层循环变成可复用抽象。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Mastra</div><div class="fw-vendor">Mastra（Gatsby 团队，YC W25）</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2024</span></div></div>
+          <div class="fw-one">内聚的 TypeScript 框架，统一 agents/workflows/tools/memory/RAG/evals——JS 生态对碎片化智能体工具的回答。</div>
+          <div class="chips"><span class="chip">agent + workflow 分离可组合</span><span class="chip">端到端 Zod 类型</span><span class="chip">内建 RAG/evals</span><span class="chip">3300+ 模型</span></div>
+          <div class="fw-diff"><b>差异化</b>最"电池全含"的 TypeScript 框架：agents+workflows+memory+RAG+evals+可视化 IDE 一体，端到端类型安全。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Pydantic AI</div><div class="fw-vendor">Pydantic Services</div></div>
+            <div class="fw-badges"><span class="badge oss">MIT</span><span class="badge year">2024 末</span></div></div>
+          <div class="fw-one">把 FastAPI/Pydantic 的"能编译就能跑"体验带到智能体构建：类型安全的 agents、tools 与经校验的结构化输出。</div>
+          <div class="chips"><span class="chip">一等类型安全</span><span class="chip">校验失败自动重试</span><span class="chip">docstring 驱动工具</span><span class="chip">模型无关</span></div>
+          <div class="fw-diff"><b>差异化</b>把类型安全/校验当一等不变量而非锦上添花；优先正确性与可维护性，FastAPI 式 DX。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Google ADK</div><div class="fw-vendor">Google</div></div>
+            <div class="fw-badges"><span class="badge oss">框架开源</span><span class="badge year">2025-04</span></div></div>
+          <div class="fw-one">Google 开源、多智能体优先的框架，从单个 prompt+tools 智能体平滑扩展到图式编排，为 Gemini/Vertex 优化。</div>
+          <div class="chips"><span class="chip">LLM/Workflow/自定义 三类智能体</span><span class="chip">Sequential/Parallel/Loop</span><span class="chip">Vertex 部署</span></div>
+          <div class="fw-diff"><b>差异化</b>多智能体优先设计 + 显式 Workflow Agent 类型，单→多智能体过渡最顺滑，并有原生优化的 Vertex 企业运行时路径。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Cline SDK</div><div class="fw-vendor">Cline</div></div>
+            <div class="fw-badges"><span class="badge oss">Apache-2.0</span><span class="badge year">2026-05</span></div></div>
+          <div class="fw-one">驱动 Cline 编码智能体的、从零打造的分层 TypeScript 运行时，开源出来让你在生产级 harness 上造自己的编码智能体。</div>
+          <div class="chips"><span class="chip">无状态循环包可单用</span><span class="chip">供应商层与循环解耦</span><span class="chip">分层可按需取用</span></div>
+          <div class="fw-diff"><b>差异化</b>专为编码智能体而生（不同于通用多智能体框架），分层架构让你精确取用所需——无状态循环、供应商层或完整栈。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="arch">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">03</span><span class="eyebrow">拆开外壳 · 6 大组件</span></div>
+      <h2>架构原理：harness 由什么构成</h2>
+      <p>把一个无状态聊天模型变成智能体的，是这六层。它们大体互相独立，可以逐个理解、逐个加固。每个组件都给出「是什么 / 怎么工作 / 关键设计抉择 / 常见陷阱 / MVP vs 成熟版」。点击展开。</p>
+    </div>
+    <div class="acc">
+
+      <details class="item" open>
+        <summary>
+          <span class="sum-key">01</span>
+          <span class="sum-body"><span class="sum-title">核心 Agent Loop（ReAct 工具循环）</span>
+            <span class="sum-sub">prompt → model → tool calls → observations → 重复；以及终止与轮次交接</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>每个编码智能体核心的那个小控制结构：持有一段不断增长的对话，问模型下一步做什么，执行它请求的工具，把结果追加回对话，然后重复，直到模型给出一轮没有工具调用的回复。它是 ReAct 的务实后代，但 2026 年的生产工具都建立在供应商原生的 function/tool-calling API 上，而非解析自由文本的 "Thought/Action/Observation"。</p></div>
+          <div class="blk"><h4>怎么工作</h4><p>状态是一个有序的 <code class="inl">messages</code> 数组 + 静态前缀(system prompt + 每个工具的 JSON Schema)，整个数组每轮全量重发——因此不加缓存时 token 成本是二次方的。模型的一轮回复是若干内容块：<code class="inl">text</code>、<code class="inl">thinking</code>、以及请求工具的 <code class="inl">tool_use</code> 块。你必须在下一条 <code class="inl">user</code> 消息里，用 id 严格匹配地回答每一个 tool_use（<code class="inl">tool_result</code>）。<b>最重要的细节是终止</b>：循环在模型产出"零个 tool_use"的一轮时结束——"没有工具调用"就是完成信号，默认没有别的。只读工具(Read/Glob/Grep)可并行，改状态的工具(Edit/Write/Bash)串行执行以免冲突。</p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>终止信号：</b>隐式"无工具调用即完成"(Claude Code/Codex/Gemini) vs 强制模型调用显式 <code class="inl">finish</code>/<code class="inl">attempt_completion</code> 工具(OpenHands/Cline/AutoGPT 血统)。隐式更简单、让模型自然收尾；显式给出可解析的停止点，但有"永不调用(死循环)"或"过早调用"风险。</div>
+            <div class="dec"><b>工具编码：</b>原生 function-calling(结构化、支持并行、贴合训练，但限于强模型) vs 文本/XML/diff 解析(通用、省 token、容错，但串行且重试更多)。Cline v3.35 从 XML 迁到原生、保留 XML 兜底，是这个取舍的典型。</div>
+            <div class="dec"><b>轮次仲裁：</b>信任模型自己的收尾(便宜，一次往返) vs 额外跑一个 nextSpeakerChecker 分类器判断"继续还是交回用户"(Gemini CLI)——能抓住过早停止，但翻倍往返、增加延迟，本身也是死循环的来源。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>漏答或错配 tool_use：每个 tool_use 必须有 id 匹配的 tool_result；报错也要返回 <code class="inl">is_error</code> 结果，绝不能什么都不返回。</li>
+            <li>把 <code class="inl">stop_reason:max_tokens</code> 当成"完成"：模型是被截断了，成熟循环会发起续写请求。</li>
+            <li>没有轮次/预算/时钟上限："改进这个代码库"这类开放请求会无限循环——务必设 max_turns + 花费预算 + 墙钟超时 + 连续失败熔断。</li>
+            <li>把工具报错当致命错误让循环崩溃，而非当成模型可绕行的观察结果。</li>
+            <li>来自观察结果的 prompt injection：工具输出(网页/文件/他人代码)是可被攻击者控制的数据，却以可信面貌重入上下文——把观察当数据、不当指令。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP · 一个周末 ~100 行</div><p>单个 messages 数组；while 循环调用供应商 + 少量 JSON-Schema 工具(read/write/bash/grep)；执行 tool_use、追加 tool_result、重复；模型无工具调用即终止；一个硬 max_turns 防跑飞。非流式、串行、无权限、无上下文管理——这确实能跑，是正确的起点。</p></div>
+            <div class="box mature"><div class="t">成熟版 · Claude Code / Codex 级</div><p>流式 + 类型化事件联合体喂给 UI；增量解析缓冲工具输入；只读并行/写入串行；完整权限系统(allow/ask/deny + 模式) + PreToolUse/PostToolUse hooks；沙箱；prompt 缓存把成本变线性；自动压缩 + 子智能体卸载;健壮的终止处理(end_turn / max_tokens 续写 / refusal / error) + 轮次/预算/时钟上限 + 连续失败熔断;会话持久化;每次结果的成本核算;MCP。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">02</span>
+          <span class="sum-body"><span class="sum-title">工具系统（read/write/edit/bash/grep/fetch）</span>
+            <span class="sum-sub">智能体的双手：难点不在 schema，而在工具周围的契约</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>一小组固定的、带 JSON Schema 的函数，模型调用它们来观察和改动代码库：读/写/改文件、跑 shell、搜代码(grep/glob)、抓网页。真正难的不是 schema，而是围绕它们的契约：编辑如何表示才能让随机性的模型可靠产出、执行前 harness 强制什么(权限/沙箱)、失败如何反馈让模型自纠错而非空转。<b>循环质量——而非 schema——才是"可用智能体"与"烧 token 机器"的分水岭。</b></p></div>
+          <div class="blk"><h4>怎么工作 · 编辑是核心难题</h4><p>LLM 无法可靠产出带行号的 unified diff(会数错行号)，而全文件重写既费 token 又诱发"偷懒"(输出 <code class="inl">// ...其余不变...</code>)。生态收敛到约 4 种表示：<b>①SEARCH/REPLACE</b>(字符串锚定，old_string 须唯一，Claude Code/Aider/Cline 的默认)；<b>②全文件写入</b>(最简单但费 token)；<b>③简化 unified diff</b>(去掉行号、模糊匹配，Aider udiff 让 GPT-4T 偷懒率降 3 倍)；<b>④上下文锚定 patch 文法</b>(OpenAI V4A/apply_patch，靠匹配周围行而非行号，但模型是专门训练过的，换非 OpenAI 模型就失灵)。落地时按"精确匹配 → 去尾空格 → 归一化换行 → 缩进容忍 → 阈值模糊"逐级回退，<b>低于置信阈值就拒绝并报精确错误，绝不破坏性地猜。</b></p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>编辑表示是最大的分叉：</b>字符串锚定 SEARCH/REPLACE(安全默认，无行号运算) vs 全文件(最简但费 token) vs 训练过的 patch 文法 V4A(最可靠但只服务于训练它的那个模型)。除非你自己拥有模型，选 SEARCH/REPLACE。</div>
+            <div class="dec"><b>匹配严格度：</b>只精确匹配(可预测但脆，一个尾空格就失败) vs 模糊(救回更多但可能改错位置)。共识：逐级容忍回退，但低于阈值就带好错误信息拒绝。</div>
+            <div class="dec"><b>权限 vs 沙箱是两道不重叠的闸：</b>权限决定执行前"能不能跑"，OS 沙箱决定执行后"能碰什么"。两者都需要。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>非唯一 old_string 悄悄改错位置——强制唯一或要求足够上下文，并为有意场景提供 replace_all。</li>
+            <li>空白/缩进/换行(CRLF vs LF)不匹配是编辑失败头号原因；在回退里归一化，但绝不低于置信阈值。</li>
+            <li>无限重试循环：编辑失败后模型永远重发相同参数烧 token(真实 bug)——用具体+可操作的错误 + "别用相同参数重试" + N 次后硬退出。</li>
+            <li>无界输出摧毁上下文窗口(<code class="inl">cat huge.log</code>、5 万行 grep、巨大网页)——一律截断并溢出到文件，只回传路径 + 预览。</li>
+            <li>用 bash 参数规则约束 curl URL 是脆的(复合命令可绕过)——改用 fetch 工具的域名规则。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>五个工具：带行号的 read；全文件 write；精确+唯一匹配的 edit(不中就回"未找到 old_string")；带超时和输出上限的 bash；glob 或 bash-grep。写/跑前一律 y/n 确认。这基本就是 Anthropic text-editor + bash，已能搞定多数单文件任务。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>edit 变健壮：read-before-edit + mtime 陈旧检查、回退匹配级联、replace_all、顺序无关的批量 MultiEdit、写前给 diff 审阅、原子写入。读/跑/抓都截断-溢出到文件。bash 加后台执行、持久 shell、per-command 权限规则、继承式 OS 沙箱。搜索用专用 ripgrep Grep + 按 mtime 排序的 Glob。错误串工程化：具体、可操作、标注终止态、原样回传编译/测试输出、重复失败后升级。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">03</span>
+          <span class="sum-body"><span class="sum-title">上下文与记忆管理</span>
+            <span class="sum-sub">把无限增长的对话塞进固定窗口，同时不丢关键信息</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>由于循环每步都把整段对话重发给模型，上下文只增不减：每次工具调用都追加调用本身 + 它(往往巨大)的结果。管理发生在四层：<b>①预算与度量</b>(在窗口里量了多少)、<b>②压缩/摘要</b>(满了怎么办)、<b>③持久记忆文件</b>(CLAUDE.md/AGENTS.md/GEMINI.md)与检索(每轮拉对的上下文进来)、<b>④prompt 缓存</b>(让由此产生的巨大稳定前缀重发起来又便宜又快)。</p></div>
+          <div class="blk"><h4>怎么工作 · 压缩的三个层级</h4><p><b>层1 工具结果卸载(最便宜，无模型调用)：</b>把臃肿的工具输出写到盘上，行内换成一个可再读的引用/路径——因为工具输出通常占了 token 大头，这一招就回收了大部分窗口。<b>层2 就近截断：</b>成对(user/assistant)地丢最旧的轮次以保结构。<b>层3 LLM 摘要(full compact)：</b>在 ~80-90% 时用专门 prompt 把 transcript 提炼成"目标/决策/改过的文件/待办/报错/下一步"，用摘要替换旧消息，再做 rehydration(重读近期文件、恢复待办、重新注入 CLAUDE.md)。OpenHands 把压缩记为事件流里的一个 CondensationAction，用重放算出视图，让压缩可审计、condenser 无状态。</p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>触发阈值：</b>高(~90%+，最大化利用但风险是下一轮很大就没空间做摘要调用) vs 早(~50%，Gemini CLI，稳但浪费窗口、压缩更频繁)。必须为"输出 + 摘要调用本身"预留缓冲。</div>
+            <div class="dec"><b>度量基准：</b>事件/消息计数(简单但每事件 token 差异极大，仍会溢出) vs 含缓存 token 的真实 token 核算(准确，需要 tokenizer 或计数端点)。</div>
+            <div class="dec"><b>缓存稳定 vs 新鲜：</b>激进缓存要求前缀逐字节稳定，这与"会话中途改工具、切模型、重写前缀式压缩"冲突——每一个都会悄悄让缓存失效。方向性 partial-compact 正是为解决它而生。</div>
+            <div class="dec"><b>检索策略：</b>结构化(Aider repo map——tree-sitter + PageRank，便宜确定、无需索引基建) vs 语义 RAG(找概念相近，需索引 + 新鲜度处理) vs 纯 agentic grep/glob(无索引，模型驱动搜索，但费轮次)。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>只用 input_tokens 对窗口计量——cache-creation/cache-read/待输出都占窗口，少算就会在"安全"读数下硬溢出。</li>
+            <li>用消息/事件计数当 token 代理(OpenHands 记录在案的缺陷)：一次大文件读就能盖过 50 个小轮次。</li>
+            <li>把 CLAUDE.md 当成"减少上下文"：@imports 会行内展开、全额计入窗口；臃肿的 CLAUDE.md 悄悄吃预算并降低指令遵从(保持 <200 行)。</li>
+            <li>把记忆文件当强制约束：它们是模型可忽略的建议性上下文——硬约束要放进 PreToolUse hook，而非 Markdown 规则。</li>
+            <li>靠压缩当长期记忆：会话内摘要随会话消失——要持久的东西必须写进记忆文件或外部存储。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>用本地 tokenizer 或 chars/4 计数；超 ~70% 就成对就近截断；从仓库根加载一个 CLAUDE.md 原样拼进 system prompt；文件选择靠模型自己调 grep/glob/read；在 system prompt + 工具定义之后放一个缓存断点。既连贯又便宜，拿到 80% 的价值。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>含缓存 token 的精确核算 + 预留缓冲 + per-model 阈值；三层压缩(卸载→截断→摘要+rehydration) + 熔断；事件溯源历史(append-only 日志 + 计算视图)让压缩可审计可回退；分层惰性加载记忆(enterprise>project>dir>user)；结构化 repo map + 语义检索;缓存感知的前缀排序(最稳在前) + 方向性 partial 压缩 + TTL 管理;跨会话持久化;给用户的上下文用量指示器 + 手动 /compact /newtask。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">04</span>
+          <span class="sum-body"><span class="sum-title">权限、安全与沙箱</span>
+            <span class="sum-sub">在模型的工具调用与真正执行之间：什么静默跑、什么问人、什么禁止</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>坐在"LLM 提议的工具调用"与"真正执行"之间的一层，决定什么静默运行、什么暂停问人、什么彻底禁止。它组合了策略引擎(对 工具+参数 模式的 allow/ask/deny 规则)、交互模式(plan/auto-accept/bypass)、以及 OS 或容器级沙箱(即便面对被攻陷或失控的智能体也能强制文件系统与网络边界)。目的是纵深防御:对安全操作降低批准疲劳,对破坏性/外泄操作硬性拦截——因为<b>模型本身不能当最后一道防线</b>。</p></div>
+          <div class="blk"><h4>怎么工作 · 两道分离的闸</h4><p>成熟工具刻意区分两个正交控制:<b>批准策略</b>决定"harness 何时必须暂停问人",<b>沙箱</b>决定"命令运行时技术上能做什么"——它们可组合(一个调用可被策略自动放行,却仍被沙箱限制)。策略引擎把每个调用按有序规则匹配,Claude Code 的经典顺序是 <code class="inl">deny → ask → allow</code> 首个匹配生效,且匹配必须<b>懂 shell</b>(<code class="inl">safe-cmd *</code> 规则绝不能匹配 <code class="inl">safe-cmd && rm -rf /</code>)。沙箱层用 macOS Seatbelt、Linux bubblewrap + seccomp/Landlock,规则须在 execvp 之前装好,所有子进程继承——一个 npm postinstall 脚本和父进程一样被关进盒子。域名级网络控制则靠用户态代理白名单实现(OS 沙箱只懂 socket、不懂域名)。</p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>两轴分离 vs 一个旋钮：</b>把"何时问"(策略)与"能做什么"(沙箱)分开,才能实现"全部自动放行,但关在紧盒子里"这一推荐的自主配置。合并成一个 YOLO 开关更简单,却逼你做全有全无的安全选择。</div>
+            <div class="dec"><b>强制位置：</b>prompt 级(最便宜,模型可无视——plan mode 会漏) → harness/应用级(对自家工具可靠,但被子进程绕过) → OS/内核级(子进程继承,唯一能扛住 shell 出来的二进制)。成熟工具三层叠加。</div>
+            <div class="dec"><b>逃生舱设计：</b>允许"带批准重试非沙箱"能大幅降摩擦,但正是被 prompt 注入或过度热心的智能体用来"说服你放它出盒子"的杠杆(真实野外案例)。关掉它(allowUnsandboxedCommands:false)以自主换安全。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>信任模型自我克制:prompt 级"只读/请先问"会漏——智能体会中途掉出 plan mode。强制必须在 harness/内核,而非 prompt。</li>
+            <li>应用级检查被子进程绕过:只拦自家工具,一旦智能体 shell 出去(npm postinstall、spawn 的二进制)就不受限——除非在内核/命名空间层强制。</li>
+            <li>朴素参数匹配被 shell 操作符(<code class="inl">&&</code> <code class="inl">|</code> <code class="inl">$()</code> 重定向、<code class="inl">/proc/self/root/...</code> 别名)轻易击穿——要解析 shell,别字符串前缀匹配。</li>
+            <li>沙箱初始化失败时默认"软降级"为非沙箱执行只给个警告(真实脚枪)——安全场景要 failIfUnavailable。</li>
+            <li>读也是外泄向量:能 Read secret 就把它拉进上下文(可能再经允许的网络调用出去)——在 Read 工具层 deny secret 路径,而非只防写。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>单个执行前 hook 把每个调用分类 allow/ask/deny(对 工具名+首参 做 glob 匹配);'ask' 给 y/n/always 提示;硬编码 deny 列表(rm -rf、force-push、CWD 外写、.env 读);会话内 allowlist 让 'always' 生效。<b>真隔离直接把整个智能体跑在一次性 Docker 容器或 git worktree 里</b>,信任那个边界——很多团队实际就这么干(容器里跑 YOLO)。Aider 的 git 自动提交更是最便宜的 MVP:不设闸,但每次改动都可秒回滚。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>懂 shell 的参数解析封堵操作符走私;分层配置 enterprise>user>project>local + 组织不可覆盖的 deny;策略与沙箱显式分离;子进程继承的 OS 强制(Seatbelt + bwrap/seccomp/Landlock,Windows 走 WSL2);域名白名单出口代理(默认拒网) + seccomp 兜底;真正的 tool-gating plan mode;受保护路径即便 bypass 也拦;硬化开关 + 受审计的人工逃生舱;每智能体 worktree+容器隔离(隔离端口/DB/缓存,不只文件);checkpoints 回滚;可编程组织策略 hooks。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">05</span>
+          <span class="sum-body"><span class="sum-title">规划与任务分解 / 多智能体</span>
+            <span class="sum-sub">todo 列表、plan mode、spec-first、子智能体编排——对抗目标漂移与上下文耗尽</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>把模糊的人类请求变成有序、可追踪的可执行步骤;当任务大到一个上下文窗口/一个智能体装不下时,把它拆到多阶段、多文件或多个协作智能体。四种由轻到重的机制:<b>①</b>模型写给自己的会话内 todo 列表;<b>②</b>把写操作挡在人工批准后的只读 plan mode;<b>③</b>把需求/设计/任务持久化为版本化产物的 spec-first 流;<b>④</b>把工作扇出到隔离上下文的子/多智能体编排。共同目标是对抗长跨度编码的两大失败模式:<b>目标漂移</b>与<b>上下文耗尽</b>。</p></div>
+          <div class="blk"><h4>怎么工作</h4><p>这些几乎都是"普通工具 + system prompt 纪律",而非模型特殊能力。<b>Todo 列表</b>(TodoWrite/update_plan/write_todos)每次调用传入整个列表并覆盖(幂等替换,不是追加),没有引擎"执行"它——它是个自我提示脚手架,价值在于每轮重新注入列表把目标钉在上下文里。<b>Plan mode</b> 实现为一个模式标志,换掉工具白名单(只留只读)与 system prompt——写工具从工具集里物理消失,模型想改也改不了;回到执行本身是一个 <code class="inl">exit_plan</code> 工具,展示计划并阻塞到人工批准。<b>子智能体</b>:一个 Task/delegate 工具生成一个带干净上下文、自己的 system prompt 和(常常)自己模型的全新智能体,跑完只回一段文字摘要、其上下文被丢弃——这就是核心的上下文隔离技巧。</p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>强制 vs 建议：</b>plan mode 可以是硬闸(写工具从工具集移除——Claude Code/Cline)或软约定(prompt 说"先规划"——Codex 一两句计划)。硬闸防跑飞但有摩擦。</div>
+            <div class="dec"><b>计划住哪：</b>在上下文里(todo)便宜但随会话消失;在盘上(spec 文件)能扛住上下文重置、支持多小时/多会话,但有仪式感且可能与代码漂移。</div>
+            <div class="dec"><b>同模型双角色 vs 分角色：</b>Aider 证明把推理(architect)与编辑(editor)分开既提分又省 30-50% 成本(费 token 的 diff 生成跑在便宜模型上);代价是两次往返、延迟更高。</div>
+            <div class="dec"><b>子智能体无状态 vs 共享状态：</b>无状态(返回即死)可预测、防上下文膨胀但不能协作;共享任务列表+消息(Agent Teams)能真协作但加锁竞争与可观测性缺口。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>目标丢失:约 10 轮编辑后模型忘了最初目标——这正是 todo/plan 每轮重注入的全部理由,省了它就是静默的默认失败。</li>
+            <li>plan mode 名不副实:若写工具还在工具集里、只靠 prompt 说"别编辑",模型终究会编辑——靠移除工具强制,别靠嘴求。</li>
+            <li>过早标记完成:测试还没过就把任务标 completed——需要显式 prompt 规则(验证前保持 in_progress),工具本身不强制任何东西。</li>
+            <li>子-子智能体无深度上限递归,成本与时间爆炸——每个子智能体 prompt 里放硬终止条件 + 编排器里限深度。</li>
+            <li>无验证层:并行 worker 返回貌似合理却冲突的输出,编排器盲目拼接——一个交叉核对/对账 pass 才让扇出可靠而非只是快。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>一个 <code class="inl">update_todos(items[])</code> 覆盖会话列表({text,status});每轮渲染并重注入。加 ~5 行 system prompt:"3+ 步任务先写 todo;恰好一个 in_progress;验证后才标 completed"。这就抓住了 80% 的防漂移价值。可选:一个布尔 plan-mode 标志把工具集过滤为只读 + 一个 exit_plan 工具等 y/n。无子智能体、无文件、无依赖图。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>严格单-in_progress 不变量 + 状态完整性绑测试结果 + TUI 实时渲染;真模式系统(plan 换工具集 AND system prompt + 硬批准闸 + per-mode 模型/architect-editor 分离);spec-first 持久化(requirements→design→tasks + 逐阶段批准 + 一致性分析);子智能体编排(隔离上下文子体 + manager-worker + 依赖分析并行 + 递归深度上限 + 对账 pass);前沿:共享任务列表 + 依赖跟踪 + 点对点消息 + 文件锁(Agent Teams) + 每动作后自动跑测试/lint 的 hooks + 每智能体可观测性。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">06</span>
+          <span class="sum-body"><span class="sum-title">System Prompt 与 Harness 工程</span>
+            <span class="sum-sub">把无状态聊天模型变成智能体的那层软件——"harness 才是产品"</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>"harness"是 LLM API 调用周围的全部代码:组装 prompt(系统指令 + 工具 schema + 对话历史)、跑 reason→act→observe 循环、派发工具调用、把结果喂回、管理上下文增长、拦截危险动作、决定何时停。模型提供推理与选择下一步;harness 提供原始模型做不到的一切——持久化、记忆、碰文件/shell/网的能力、安全与迭代。2026 年 3 月 Claude Code 源码泄露后行业共识很直白:<b>harness、而非模型,才是产品。</b></p></div>
+          <div class="blk"><h4>怎么工作 · System Prompt 是分层组装的</h4><p>system prompt 不是一根字符串,而是由稳定段与易变段组合而成,排序刻意让稳定前缀能被 prompt 缓存(重复前缀省 ~90% token)。典型 Claude Code 分层:(a) 身份/人格 → (b) 行为规则(简洁输出、别擅自加注释、别擅自提交、prompt 注入护栏) → (c) 工具使用策略(用 Read 别用 cat、批量并行、一次一个 in_progress) → (d) 环境块(cwd/OS/git 状态/日期——易变,放后面减少缓存失效) → (e) 项目记忆(CLAUDE.md) → (f) 会话状态。<b>工具描述本身就是 prompt 工程</b>:何时用、何时别用、前置条件、示例,都是承载行为契约的指令文本。流式经 SSE 增量到达,工具参数片段要累积到完整 JSON 才派发;AbortSignal 贯穿整条调用以支持中断,计数器/锁要在 finally 里释放。</p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>原生 function-calling vs 自解析 XML/文本：</b>原生健壮、供应商维护但锁定支持它的模型;XML/文本(Cline 变体、Aider 编辑块)能跑任意模型但要自写解析器 + 工具名/参数修复。</div>
+            <div class="dec"><b>单智能体循环 vs 多智能体编排：</b>Claude Code/Codex/Gemini 刻意保持一个推理循环 + 扁平消息列表以求可预测可调试;多智能体加能力也加协调成本与非确定性。</div>
+            <div class="dec"><b>prompt 缓存布局 vs 新鲜：</b>最大化稳定缓存前缀,与"保持上下文新鲜(git 状态/时间/文件态每轮变)"冲突——靠稳定→易变排序、只在尾部接受缓存失效来化解。</div>
+            <div class="dec"><b>往 system prompt 塞多少 vs 用工具教：</b>啰嗦行为规则提升遵从但每轮费 token,且超 ~25k token 上下文模型会"分心";精简 prompt 更便宜但更难控。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>经工具结果的 prompt 注入:文件/网页/命令输出是与指令同处一个上下文的不可信输入;恶意仓库可劫持智能体——加显式护栏,把抓取内容当数据绝不当指令。</li>
+            <li>缓存抖动:把易变数据(时间戳、git 状态、token 数)放前面,每轮都让 prompt 缓存失效、悄悄翻倍成本——按稳定→易变排序。</li>
+            <li>流式部分标记泄露:逐 token 冲刷会把半成形的工具标签渲染成可见文本;参数没累积完就派发会发出畸形调用——缓冲到单元完整再动。</li>
+            <li>缺中断清理:客户端会中途断开,若只在正常路径释放锁/计数器就会泄漏——在 finally 里释放。</li>
+            <li>过度臃肿的工具集/描述:工具太多或"何时用"含糊会导致选错工具、浪费调用——精挑一小组、描述锋利。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>几百行、一个周末:while 循环调用原生工具模型 + 一段短静态 system prompt + 3-4 个工具;执行工具调用、追加结果到扁平消息列表、循环到无工具调用;硬轮次上限(~25);可选写/跑前单个 y/N;全文件编辑;不流式;不做上下文管理;直接跑在宿主机。对小而清晰的任务确实能跑,是正确起点。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>模块化、缓存边界化的 system prompt(稳定→易变);富工具描述(何时/何时不/示例/前置);SSE 流式 + 增量参数累积 + 部分标记缓冲 + AbortSignal 中断 + finally 清理;按模型强弱匹配编辑格式 + 应用修复;模型路由(planner vs editor + 便宜模型做摘要/子体);反应式压缩(或主动 repo-map 选择) + 持久记忆重注入;真权限引擎 + 深度命令校验;沙箱执行;工具结果上的注入检测;MCP;多重停止条件;<b>可观测性</b>(记录每个 action/observation 以便重放与评估——OpenHands 视其为最重要的设计决策)。两者的差距几乎全是 harness 工程,而非模型质量。</p></div>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+<section id="roadmap">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">04</span><span class="eyebrow">从零到成熟 · 9 个阶段</span></div>
+      <h2>从零构建路线图</h2>
+      <p>核心原则:<b>先让它跑，再让它变好。</b>Stage 0 的裸循环加上五个工具，就真能完成真实的单文件任务；之后每个阶段都是在给一个"已经能跑"的系统做加固，而非第一个阶段的前置条件。每个阶段都应可独立运行、可回归测试。点击展开每个阶段的目标、构建步骤、新增组件、你会学到什么、验收标准与常见错误。</p>
+    </div>
+    <div class="acc">
+
+      <details class="item" open>
+        <summary>
+          <span class="sum-key">0</span>
+          <span class="sum-body"><span class="sum-title">最小循环 · 证明引擎（~100 行）</span>
+            <span class="sum-sub">跑通一个能正确终止的 ReAct 循环，只带一个 trivial 工具</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>拿到一个能正确终止的工具循环，只带一个 trivial 工具。重点是内化控制结构，而非此刻有用。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>建一个有序 <code class="inl">messages</code> 数组，播下 system prompt 和用户第一条消息。</li>
+            <li>把一个工具定义成 JSON Schema(如 <code class="inl">read_file(path)</code>)传入供应商的 tools 参数。</li>
+            <li>写 while 循环:调模型(非流式)、追加 assistant 消息、抽取 tool_use 块。</li>
+            <li>若零个 tool_use，break 并打印文字——这个"无工具调用=完成"就是主终止。</li>
+            <li>对每个 tool_use 跑工具，追加一条含 id 匹配 tool_result 的 user 消息。</li>
+            <li>加硬 <code class="inl">max_turns</code>(如 25)作副终止，防止失控模型无限循环。</li>
+          </ul></div>
+          <div class="blk"><h4>新增组件</h4><div class="chips"><span class="chip">messages 数组(唯一真相源)</span><span class="chip">带工具 schema 的供应商调用</span><span class="chip">工具派发 switch</span><span class="chip">隐式终止 + max_turns</span></div></div>
+          <div class="learn"><b>你会学到 · </b>harness 驾驶、模型思考;终止是隐式的;工具结果是 user 角色("环境以用户身份说话");每个 tool_use 必须被恰好一个 id 匹配的 tool_result 按序回答。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>让它读一个文件并总结:模型调 read_file、你喂回结果、它给出文字、循环干净退出。永不挂起，简单请求下永不触顶 max_turns。</li></ul></div>
+            <div class="blk"><h4>常见错误</h4><ul class="clean risk">
+              <li>漏答某个 tool_use 或 id 错配——这是硬 API 报错，不是软失败。</li>
+              <li>把 <code class="inl">max_tokens</code> 当"完成"——模型被截断了，正确做法是续写。</li>
+              <li>把工具结果放进 assistant 消息而非 user 消息。</li>
+              <li>裸循环还没跑通就加流式/权限/多工具——先隔离调试骨架。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">1</span>
+          <span class="sum-body"><span class="sum-title">核心工具套件 · 让它有用</span>
+            <span class="sum-sub">加上五个承重工具 + 一句粗暴的安全 prompt，就能完成真实小任务</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>把玩具循环变成能真正完成小型单文件编码任务的东西。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li><code class="inl">read(path,offset?,limit?)</code> 回带行号文本(cat -n 风格);~2000 行封顶、长行截断。</li>
+            <li><code class="inl">write(path,content)</code> 全文件写入/新建。</li>
+            <li><code class="inl">edit(path,old,new)</code>:old 须精确匹配且唯一;未中回"未找到"，多中回"匹配 N 处，加上下文"。</li>
+            <li><code class="inl">bash(command,timeout?)</code> 持久 cwd shell;输出封顶(~30k 字符)并标注截断。</li>
+            <li><code class="inl">grep</code>/<code class="inl">glob</code>(shell out 到 ripgrep)让模型按内容和文件名定位代码。</li>
+            <li>任何 write/edit/bash 前插入一律 y/n 确认。</li>
+            <li>把工具描述写成真正的指令文本:"编辑前必须先读文件"、"用 Grep 别用 bash grep"。</li>
+          </ul></div>
+          <div class="blk"><h4>新增组件</h4><div class="chips"><span class="chip">read/write/edit/bash/grep+glob</span><span class="chip">精确+唯一 编辑契约</span><span class="chip">输出截断</span><span class="chip">一律 y/n 批准</span><span class="chip">指令式工具描述</span></div></div>
+          <div class="learn"><b>你会学到 · </b>是工具和 prompt(而非循环)让智能体有用;字符串锚定 SEARCH/REPLACE 是安全默认(无需行号运算);错误串是模型唯一的反馈通道。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>它能修真实文件里的 bug:grep 找到代码、read、用唯一锚点 edit、bash 跑测试、读失败、再试。在小仓库上端到端跑通，无需你手工照看 tool id。</li></ul></div>
+            <div class="blk"><h4>常见错误</h4><ul class="clean risk">
+              <li>让 edit 静默应用非唯一匹配——务必拒绝并要更多上下文。</li>
+              <li>为微小改动做全文件重写(费 token、诱发"...其余不变..."偷懒)。</li>
+              <li>含糊的错误串("error")而非具体可操作的——会引发重试循环。</li>
+              <li>不给 bash 输出封顶，一个 cat huge.log 就炸掉上下文窗口。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">2</span>
+          <span class="sum-body"><span class="sum-title">权限引擎 + 容器隔离 · 别毁了机器</span>
+            <span class="sum-sub">用真正的 allow/ask/deny 策略替换一律 y/n，并用一次性容器/worktree 廉价拿到真隔离</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>用真正的策略替换粗暴 y/n，并通过把整个智能体跑在一次性容器或 git worktree 里廉价拿到真隔离。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>把每个工具调用路由过单个执行前闸(PreToolUse 式 hook)。</li>
+            <li>实现有序 <code class="inl">deny → ask → allow</code> 首个匹配生效，匹配 <code class="inl">Tool</code> 或 <code class="inl">Tool(specifier)</code> 模式。</li>
+            <li>让匹配懂 shell:<code class="inl">safe-cmd *</code> 绝不能匹配 <code class="inl">safe-cmd && rm -rf /</code>——解析 shell 操作符，别字符串前缀。</li>
+            <li>加硬编码 deny 列表(rm -rf、force-push、CWD 外写、.env 读)与会话 allowlist 让"always"生效。</li>
+            <li>加交互模式:default(读自由、改要问)、acceptEdits(写自动、命令要问)、plan(硬只读)。</li>
+            <li>真隔离:现在就把整个智能体跑在一次性 Docker 容器或每任务 git worktree 里，信任那个边界。</li>
+          </ul></div>
+          <div class="blk"><h4>新增组件</h4><div class="chips"><span class="chip">单一拦截闸</span><span class="chip">deny&gt;ask&gt;allow 引擎(懂 shell)</span><span class="chip">硬编码 deny + 会话 allowlist</span><span class="chip">交互模式</span><span class="chip">容器/worktree 隔离</span></div></div>
+          <div class="learn"><b>你会学到 · </b>批准策略("能不能跑")与沙箱("能碰什么")是两个正交轴，分开才能"全部自动放行、但关在紧盒子里"。模型永远不能当最后一道防线。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>被注入的 "run rm -rf ~" 被策略拒;即便规则被骗，容器/worktree 也困住爆炸半径;安全只读命令不打扰地跑;deny 规则无法被更窄的 allow 覆盖。</li></ul></div>
+            <div class="blk"><h4>常见错误</h4><ul class="clean risk">
+              <li>朴素字符串前缀匹配被复合命令(&& | $() 重定向)轻易绕过。</li>
+              <li>试图用 Bash 规则约束 curl/wget URL——URL 参数匹配很脆，改用 fetch 工具域名规则。</li>
+              <li>以为 git worktree 隔离端口/DB/缓存——它只隔离文件。</li>
+              <li>让 deny 可被覆盖，或让本地项目设置放松组织 deny。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+<details class="item">
+        <summary>
+          <span class="sum-key">3</span>
+          <span class="sum-body"><span class="sum-title">健壮编辑 + 工程化错误反馈</span>
+            <span class="sum-sub">让编辑可靠落地（核心可靠性问题），把错误消息变成可衡量地减少重试的自纠错面</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>让编辑可靠落地(核心可靠性问题)，并把错误消息变成能可衡量地减少重试循环的自纠错面。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>加 read-before-edit 闸:记录文件被读过及其 mtime;对陈旧文件的编辑予以拒绝。</li>
+            <li>建编辑回退级联:精确 → 去尾空格 → 归一化换行 → 缩进容忍 → 阈值模糊;<b>低于置信阈值就带精确错误拒绝，绝不破坏性猜测。</b></li>
+            <li>为有意的非唯一场景加 <code class="inl">replace_all</code>，加顺序无关应用的批量 MultiEdit。</li>
+            <li>写前展示 diff 供批准;原子写入(临时文件 + rename)并更新记录的 mtime。</li>
+            <li>工程化错误串:命名 工具+失败类型+触发输入，说明下一步怎么做，标注终止态，原样回传编译/测试输出。</li>
+            <li>加熔断:N 次相同失败后停下升级，而非空转。</li>
+            <li>超大 read/bash/fetch 输出溢出到文件，回传路径 + head 预览让模型 grep。</li>
+          </ul></div>
+          <div class="blk"><h4>新增组件</h4><div class="chips"><span class="chip">mtime 陈旧闸</span><span class="chip">回退匹配级联 + 阈值</span><span class="chip">replace_all + 顺序无关 MultiEdit</span><span class="chip">diff 批准 + 原子写</span><span class="chip">工程化错误串</span><span class="chip">连续失败熔断</span><span class="chip">截断-溢出到文件</span></div></div>
+          <div class="learn"><b>你会学到 · </b>循环质量(而非 schema)才是"可用"与"烧 token"的分水岭。逐级容忍匹配，但绝不静默应用低置信匹配。追加"别用相同参数重试"能显著降低相同重试。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>Stage 1 里因尾空格失败的编辑现在能成;真正有歧义的编辑被带可操作信息地拒绝;重复失败触发熔断而非永远烧 token。</li></ul></div>
+            <div class="blk"><h4>常见错误</h4><ul class="clean risk">
+              <li>应用低于阈值的模糊匹配、改错了位置。</li>
+              <li>匹配前没剥掉行号(读显示行号，文件里没有)。</li>
+              <li>无熔断的无限编辑重试(真实世界 bug)。</li>
+              <li>让超大工具输出进上下文而非溢出到盘。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">4</span>
+          <span class="sum-body"><span class="sum-title">流式、并行读取与可中断（UX + 延迟）</span>
+            <span class="sum-sub">让智能体感觉是"活的"并降低延迟</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>通过向 UI 流式类型化事件、并行执行只读工具、把取消信号贯穿整条调用，让智能体感觉是活的并降低延迟。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>把模型调用切到流式(SSE);累积文本增量，缓冲工具参数片段直到每个 tool_use 的输入 JSON 完整才派发。</li>
+            <li>把流表面成一个判别式事件联合体(System/Assistant/User/StreamEvent/Result)供 TUI 增量渲染。</li>
+            <li>标记工具只读 vs 改动(readOnlyHint);只读(Read/Glob/Grep)并发跑，改状态(Edit/Write/Bash)保持串行以免冲突。</li>
+            <li>给 bash 加后台执行(<code class="inl">run_in_background</code>)，让长构建/服务器不阻塞循环。</li>
+            <li>把 AbortSignal 贯穿整条调用，Ctrl-C 干净解开循环;在 finally 里释放计数器/锁(客户端会无预警断开)。</li>
+            <li>缓冲输出，让半成形的工具标签绝不被渲染成可见文本。</li>
+          </ul></div>
+          <div class="blk"><h4>新增组件</h4><div class="chips"><span class="chip">SSE 流式 + 增量参数累积</span><span class="chip">TUI 类型化事件联合体</span><span class="chip">只读并行 / 写入串行</span><span class="chip">后台 bash</span><span class="chip">AbortSignal 中断 + finally 清理</span></div></div>
+          <div class="learn"><b>你会学到 · </b>派发前把 tool_use 缓冲到输入 JSON 完整;并行对读安全、对写需要顺序/冲突守卫;可中断是清理纪律问题(在 finally 释放)，而非只是 UI 特性。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>文字逐 token 出现;三个 grep 同时跑、比串行快返回;生成中途按 Stop 干净取消、无泄漏锁或半渲染标签;后台 dev server 保持运行而智能体继续。</li></ul></div>
+            <div class="blk"><h4>常见错误</h4><ul class="clean risk">
+              <li>工具参数 JSON 没流完就派发调用。</li>
+              <li>并行跑改动工具，出现文件/索引竞争。</li>
+              <li>客户端断开时没释放锁/计数器(泄漏卡住下一轮)。</li>
+              <li>把部分工具调用标记渲染成用户可见文本。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">5</span>
+          <span class="sum-body"><span class="sum-title">上下文与记忆管理 · 挺过长任务</span>
+            <span class="sum-sub">把不断增长的对话保持在固定窗口内，并用 prompt 缓存让巨大稳定前缀变便宜</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>把不断增长的对话保持在固定窗口内、同时保住智能体所需信息，并用 prompt 缓存让巨大稳定前缀既便宜又快。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>用供应商 usage 响应对窗口做 token 核算——数 input + cache-creation + cache-read + output(缓存 token 仍占窗口)，为"下一轮响应 + 压缩调用"预留缓冲。</li>
+            <li>层1(免费):把臃肿工具结果卸载到盘，行内换成可再读指针——回收最多 token。</li>
+            <li>层2:成对(user/assistant)就近截断最旧轮次以保结构。</li>
+            <li>层3:~80-90% 时 LLM 摘要——把 transcript 提炼成 目标/决策/改过文件/待办/报错/下一步，替换旧消息，再 rehydration(重读近期文件、恢复待办、重注入 CLAUDE.md)。</li>
+            <li>每轮把分层记忆文件(enterprise&gt;project&gt;dir&gt;user)载入 system prompt;每次压缩后重注入(它是 always-follow 规则唯一可靠的家)。</li>
+            <li>把 prompt 按最稳在前排序(tools→system→memory→history)，在稳定前缀后放一个 cache_control 断点;加方向性 partial-compact 让摘要不炸掉缓存前缀。</li>
+            <li>加熔断:连续 3 次压缩失败后停用自动压缩。</li>
+          </ul></div>
+          <div class="blk"><h4>新增组件</h4><div class="chips"><span class="chip">真实 token 核算(含缓存)</span><span class="chip">三层压缩:卸载→截断→摘要+rehydration</span><span class="chip">分层 CLAUDE.md/AGENTS.md</span><span class="chip">缓存感知前缀排序 + 断点</span><span class="chip">方向性 partial 压缩</span><span class="chip">压缩熔断</span></div></div>
+          <div class="learn"><b>你会学到 · </b>循环每步重发整段历史，所以不缓存稳定前缀时成本是二次方的。重写前缀式压缩会让缓存失效——因此需要方向性 partial-compact。压缩摘要随会话消失;要持久的东西必须落到记忆文件。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>一个曾溢出的 60 轮任务现在能压缩并无缝继续(目标+待办+近期文件完好);重复轮次里 cache-read token 占主导(前缀保温);CLAUDE.md 里的规则在压缩后仍被遵守。</li></ul></div>
+            <div class="blk"><h4>常见错误</h4><ul class="clean risk">
+              <li>只量 input_tokens、忽略缓存 token，结果还是溢出。</li>
+              <li>压缩得太晚，连跑摘要调用本身的空间都没有。</li>
+              <li>每次压缩都重写缓存前缀、摧毁缓存命中率。</li>
+              <li>靠压缩摘要当跨会话状态，而不写进记忆文件。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+<details class="item">
+        <summary>
+          <span class="sum-key">6</span>
+          <span class="sum-body"><span class="sum-title">规划与任务分解 · 对抗目标漂移</span>
+            <span class="sum-sub">给智能体自我提示的 todo 脚手架、硬闸 plan mode，以及可选的盘上 spec 产物</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>给智能体一个自我提示的 todo 脚手架、一个硬闸 plan mode，以及可选的盘上 spec 产物，让长跨度工作不漂移、不在重置时丢失。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>加 <code class="inl">write_todos(items[])</code> 工具，每次调用<b>覆盖整个列表</b>(幂等替换){content,status: pending|in_progress|completed};在 TUI 渲染并每轮重注入上下文。</li>
+            <li>加 ~5 行 system-prompt 纪律:"3+ 步任务先写 todo;恰好一个 in_progress;验证后才标 completed;测试没过绝不标完成"。</li>
+            <li>把 plan mode 实现为模式标志，把工具白名单换成<b>仅只读</b>(Read/Grep/Glob/WebFetch)——改动工具从工具集里物理消失，模型想改也改不了。</li>
+            <li>加 <code class="inl">exit_plan(plan_text)</code> 工具，展示计划并阻塞到人工批准;唯有批准才解锁写工具、切换模式。</li>
+            <li>(可选)spec-first 持久化:requirements.md → design.md → tasks.md 落盘，逐阶段批准闸，让计划挺过上下文重置、可像代码一样 diff。</li>
+            <li>(可选)per-role 模型路由:强 planner + 便宜 editor(Aider architect/editor 分离)。</li>
+          </ul></div>
+          <div class="blk"><h4>新增组件</h4><div class="chips"><span class="chip">write_todos(整表覆盖) + prompt 纪律</span><span class="chip">plan mode(工具白名单切换)</span><span class="chip">exit_plan 人工批准闸</span><span class="chip">可选 spec-first 产物</span><span class="chip">可选 planner/editor 分离</span></div></div>
+          <div class="learn"><b>你会学到 · </b>todo 列表是自我提示脚手架、不是执行引擎——价值在每轮把目标钉在上下文里。plan mode 的强制必须靠 tool-gating(移除工具)而非 prompt，否则模型会掉出去。整表覆盖胜过增量 API(无竞争)。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>多步特性上，智能体先写计划、你批准、它带着实时 todo(恰好一个 in_progress)执行;plan mode 里尝试编辑是不可能的，因为工具根本不在。</li></ul></div>
+            <div class="blk"><h4>常见错误</h4><ul class="clean risk">
+              <li>只靠 prompt 强制 plan mode——模型照样编辑或静默退出(真实 bug 类)。</li>
+              <li>压缩时丢了 plan mode(压缩后要重注入模式/计划)。</li>
+              <li>让多于一个 todo 处于 in_progress，或测试没过就标完成。</li>
+              <li>用会 desync 的增量/patch todo API——优先整表覆盖。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">7</span>
+          <span class="sum-body"><span class="sum-title">OS 级沙箱 + 网络出口控制</span>
+            <span class="sum-sub">把强制下沉到内核，扛住智能体 spawn 的任何子进程，并在域名级控制出口</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>把强制下沉到内核，让它扛住智能体 spawn 的任何子进程，并在域名级控制网络出口——这是应用层检查给不了的加固。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>macOS 生成 Seatbelt .sb profile(sandbox-exec);Linux 用 bubblewrap(全新 mount+user+network 命名空间) + seccomp-BPF(拦 connect/bind/listen，放行 AF_UNIX)和/或 Landlock 做写作用域。</li>
+            <li>规则在 <code class="inl">execvp</code> 之前装好，让子进程从第一条指令起就被关住;设 PR_SET_PDEATHSIG 让孤儿子进程随父而死——所有子进程继承盒子(npm postinstall 与父进程一样被关)。</li>
+            <li>把文件系统写限制在 workspace/CWD;把 .git 设只读防历史被改写;加 secret 目录豁免，且 sandbox.denyRead 要与权限层 Read deny 配对(denyRead 单独并不拦 Read 工具)。</li>
+            <li>网络走用户态域名白名单代理:去掉沙箱网络命名空间，强制流量经 Unix socket 到一个查白名单的代理(拒绝的 CONNECT 回 403)，再用 seccomp 兜底忽略代理环境变量的工具。</li>
+            <li>加硬化开关:failIfUnavailable:true、allowUnsandboxedCommands:false;仅当已沙箱时才自动放行 bash。</li>
+            <li>提供受审计、人工批准的"带批准重试非沙箱"逃生舱——并清楚它正是过度热心/被注入的智能体会试图说服你打开的杠杆。</li>
+            <li>Windows 上回退到 WSL2(真 Linux)拿这些原语。</li>
+          </ul></div>
+          <div class="blk"><h4>新增组件</h4><div class="chips"><span class="chip">Seatbelt / bwrap+seccomp / Landlock</span><span class="chip">子进程继承 + PR_SET_PDEATHSIG</span><span class="chip">文件作用域 + 只读 .git + secret 豁免</span><span class="chip">域名白名单出口代理 + seccomp 兜底</span><span class="chip">硬化开关 + 受审计逃生舱</span><span class="chip">WSL2 Windows 回退</span></div></div>
+          <div class="learn"><b>你会学到 · </b>权限与沙箱是不重叠的两道闸、都需要:权限执行前决定"能不能跑"，内核沙箱执行后决定"能碰什么"——且只有内核层能扛住 shell 出去的二进制。OS 沙箱懂 socket 不懂域名，域名控制需用户态代理。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>恶意 postinstall 即便 bash"成功"也无法写出 workspace 或开非白名单 socket;抓取被拒域名在代理处得 403;设了 failIfUnavailable 时沙箱拒绝软降级为非沙箱执行。</li></ul></div>
+            <div class="blk"><h4>常见错误</h4><ul class="clean risk">
+              <li>以为 sandbox.denyRead 能把 secret 挡在上下文外——除非也加权限层 Read deny，Read 工具照读。</li>
+              <li>沙箱起不来时只给警告就软降级为非沙箱执行(真实脚枪)。</li>
+              <li>在子进程启动后才装沙箱规则，留下一段不受限执行窗口。</li>
+              <li>把 allowUnsandboxedCommands 留开，让智能体"说服"自己出盒子。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">8</span>
+          <span class="sum-body"><span class="sum-title">子智能体与多智能体编排 · 扩展到单个上下文之外</span>
+            <span class="sum-sub">把工作扇出到隔离上下文，让昂贵探索永不污染编排器；前沿则协调多个全智能体</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>把工作扇出到隔离上下文，让昂贵探索永不污染编排器;前沿再用共享任务状态协调多个全智能体。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>加 <code class="inl">Task</code>/delegate 工具:生成一个带干净上下文、自己 system prompt、可选自己(更便宜)模型的全新智能体;子体跑完自己的循环、<b>只回一段文字摘要</b>，其中间 token 被丢弃。</li>
+            <li>用 manager-worker 模式:编排器规划、委派机械/探索工作，然后验证并整合——它的上下文吸收摘要、不吸收原始探索。</li>
+            <li>分析任务列表的依赖:无依赖任务并发跑、有依赖串行;加递归深度上限与每子体终止条件，防"子体生子体"成本爆炸。</li>
+            <li>加验证/对账 pass(用分层模型;未经验证的 worker 错误会静默累积)。</li>
+            <li>加可观测性:每智能体成本/token 指标 + 带前缀日志(如 delegate:&lt;id&gt;)——到这个规模，否则无法调试。</li>
+            <li>(前沿)转向协作的全智能体:共享任务列表(状态+依赖跟踪)、点对点消息、文件锁，每个队友是自己 worktree/容器里的完整实例——隔离端口/DB/缓存，不只文件。</li>
+          </ul></div>
+          <div class="blk"><h4>新增组件</h4><div class="chips"><span class="chip">Task/delegate(隔离上下文子体)</span><span class="chip">manager-worker + 模型分层</span><span class="chip">依赖分析 + 并行扇出 + 递归上限</span><span class="chip">验证/对账 pass</span><span class="chip">每智能体可观测性</span><span class="chip">前沿:共享任务表+消息+文件锁+每智能体容器</span></div></div>
+          <div class="learn"><b>你会学到 · </b>上下文隔离是核心技巧:子智能体的昂贵探索发生在一个永不进入编排器的暂存窗口里，只有摘要作为一个 tool_result 返回。无状态"返回即死"子体可预测但不能协作;共享状态团队能协作但加锁竞争与可观测性缺口。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>一个含三个独立子任务并行的大任务完成时，编排器上下文保持精简;一个研究子体探索了 20 个文件却只回一段摘要;worker 输出在整合前被验证、而非盲信。</li></ul></div>
+            <div class="blk"><h4>常见错误</h4><ul class="clean risk">
+              <li>让子体中间 token 流回父体(彻底破坏隔离的意义)。</li>
+              <li>无递归深度上限——子体生子体成本爆炸。</li>
+              <li>跳过验证 pass，未经验证的 worker 错误静默累积。</li>
+              <li>给绑端口/碰共享 DB 的并行智能体用 worktree——需要每智能体容器做运行时隔离，不只文件。</li>
+              <li>无依赖分析，依赖任务互相竞争或覆盖。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+<section id="iterate">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">05</span><span class="eyebrow">MVP 之后 · 怎么持续变好</span></div>
+      <h2>迭代原则与评估方法</h2>
+      <p>裸循环跑起来后，接下来靠"看数据、按证据加固"往前推。下面是可迁移的迭代原则，以及一套三轴的评估方法——把这套评估冻成回归集，每个阶段都对它跑一遍，要求 solve-rate 与安全性单调改善。</p>
+    </div>
+
+    <h3 style="font-size:18px;font-weight:750;margin-bottom:18px">迭代优化原则</h3>
+    <div class="princ">
+      <div class="card pr"><span class="no">01</span><p><b>先让它跑，再让它变好。</b>先发布会崩的 MVP——裸循环 + 五个工具就真能完成单文件任务;后续每一阶段都是加固已能跑的系统，而非第一个阶段的前置。</p></div>
+      <div class="card pr"><span class="no">02</span><p><b>先埋点，再优化。</b>尽早加 token 核算(input+cache-creation+cache-read+output)与每轮/每工具的成本+延迟日志;看不到 token 和秒花在哪，就没法改进上下文策略或模型路由。</p></div>
+      <div class="card pr"><span class="no">03</span><p><b>把错误串当产品面对待。</b>具体+可操作+标注终止态的错误消息，加"别用相同参数重试"，比几乎任何模型改动都更能削减重试循环——靠读失败运行的 transcript 来迭代它们。</p></div>
+      <div class="card pr"><span class="no">04</span><p><b>先打最大的 token 消耗者。</b>工具输出占上下文大头，所以"卸载到盘+指针"以零模型成本回收最多窗口——先做这个，再去动 LLM 摘要。</p></div>
+      <div class="card pr"><span class="no">05</span><p><b>为缓存塑形 prompt。</b>按最稳在前排序(tools→system→memory→history)，避免会话中途改工具/模型/前缀;5 分钟 TTL 缓存在活跃循环里能一直保温，把二次方成本变线性。</p></div>
+      <div class="card pr"><span class="no">06</span><p><b>按角色与子任务路由模型。</b>强模型跑规划/主循环，便宜模型跑编辑、摘要/压缩、子体搜索、commit 消息;按模型强弱匹配编辑格式(强→diff/SEARCH-REPLACE，弱→全文件)。</p></div>
+      <div class="card pr"><span class="no">07</span><p><b>逐步把强制下沉。</b>prompt 级 → harness/应用级 → OS/内核级。只有内核层能扛住 shell 出去的子进程，所以把安全关键规则往下迁，而非信任模型配合。</p></div>
+      <div class="card pr"><span class="no">08</span><p><b>数据证明复杂性之前，选更简单的设计。</b>隐式"无工具调用=完成"胜过显式 finish 工具;整表 todo 覆盖胜过增量 API;单循环胜过多智能体——只有当实测失败模式(漂移/耗尽/协调)出现时才加仪式。</p></div>
+      <div class="card pr"><span class="no">09</span><p><b>有条不紊地封堵绕过。</b>懂 shell 的参数解析、顺序无关多编辑应用、连续失败熔断，都是对具体真实脚枪的回应——在 transcript 里观察到对应失败时再逐个加。</p></div>
+      <div class="card pr"><span class="no">10</span><p><b>保持每阶段可独立运行并回归测试。</b>用一组固定的小任务，每阶段后必须仍通过，以抓住经典破坏(未答 tool_use、缓存失效、plan-mode 掉出、编辑误应用)。</p></div>
+    </div>
+
+    <h3 style="font-size:18px;font-weight:750;margin:40px 0 18px">评估方法 · 三轴 + 冻结回归集</h3>
+    <div class="eval">
+      <div class="card ev">
+        <div class="tag">AXIS 1</div>
+        <h4>正确性 / 任务完成</h4>
+        <p>跑 <b>SWE-bench（Verified 是标准切片）</b>看真实仓库 bug 修复解决率——它演练完整循环(定位→编辑→跑测试→读失败→重试)，是品类的经典比较指标。补一套代表性内部任务(单文件修复、多文件特性、重构、绿地)，以各自测试判 pass/fail。用 Aider 的编辑格式方法论单独隔离衡量"编辑应用成功率"。</p>
+      </div>
+      <div class="card ev">
+        <div class="tag">AXIS 2</div>
+        <h4>成本与延迟</h4>
+        <p>跟踪<b>每解决任务的 $ 与 token</b>(拆成 input/cache-creation/cache-read/output 以看缓存命中率)、每任务墙钟、完成所需轮数。prompt 缓存、模型路由、工具输出卸载都在这里显形——一个提升解决率却让成本翻三倍的阶段是一次回归。</p>
+      </div>
+      <div class="card ev">
+        <div class="tag">AXIS 3</div>
+        <h4>安全 / 健壮性</h4>
+        <p>一套 <b>red-team 套件</b>(prompt 注入、破坏性命令 rm -rf/force-push/.env 读/非白名单出口/postinstall 逃逸)，必须在策略层<b>与</b>沙箱层双双被拦;加可靠性指标——相同重试率、无限循环/熔断触发次数、压缩连续性(压缩后智能体是否仍知道目标+待办)。</p>
+      </div>
+    </div>
+    <p class="prose" style="margin-top:24px;color:var(--muted);font-size:14.5px">方法:冻结任务集，每阶段对它跑一遍，要求 solve-rate 与安全性单调改善(或给出明确的权衡理由)，同时盯住成本/延迟;记录每个 action/observation 让运行可重放，供评估与调试。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h4>关于这份调研</h4>
+    <p class="cav">本页由一个多智能体 workflow 编排产出:<b>12 个研究智能体</b>并行做联网调研(4 个赛道盘点 + 6 个架构深挖 + 1 个发展史 + 1 个综合路线图)，再由主循环综合成这份可交互文档。数据反映约 <b>2026 年年中</b>的态势。</p>
+    <p class="cav"><b>请注意核实：</b>该领域变动极快，版本号、SWE-bench 分数、估值、开源状态、发布日期等具体数字会过时或存在偏差——把它当作理解<b>格局与构建方法</b>的地图，具体决策前请回到各项目官方来源二次确认。</p>
+    <div class="meta">
+      <span>◆ 35 框架 / SDK</span><span>◆ 6 架构组件</span><span>◆ 9 阶段路线</span><span>◆ 5 发展时代</span><span>◆ 纯本地 · 零外部依赖</span>
+    </div>
+  </div>
+</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---- 框架分类 Tab 切换 ---- */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+  function selectCat(cat){
+    tabs.forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.cat === cat)); });
+    panels.forEach(function(p){ if(p.dataset.cat === cat){ p.removeAttribute('hidden'); } else { p.setAttribute('hidden',''); } });
+  }
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){ selectCat(t.dataset.cat); });
+    t.addEventListener('keydown', function(e){
+      if(e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var i = tabs.indexOf(t);
+      var n = e.key === 'ArrowRight' ? (i+1)%tabs.length : (i-1+tabs.length)%tabs.length;
+      tabs[n].focus(); selectCat(tabs[n].dataset.cat);
+    });
+  });
+
+  /* ---- Hero: agent loop 顺序高亮动画 ---- */
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('.loop .node'));
+  if(nodes.length && !reduce){
+    var cur = 0;
+    setInterval(function(){
+      nodes.forEach(function(n){ n.classList.remove('on'); });
+      nodes[cur].classList.add('on');
+      cur = (cur + 1) % nodes.length;
+    }, 950);
+  } else if(nodes.length){
+    nodes.forEach(function(n){ n.classList.add('on'); });
+  }
+
+  /* ---- 目录滚动高亮 (scroll-spy) ---- */
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc .toclink'));
+  var map = {};
+  links.forEach(function(l){ var id = l.getAttribute('href').slice(1); var el = document.getElementById(id); if(el){ map[id] = l; } });
+  var ids = Object.keys(map);
+  if('IntersectionObserver' in window && ids.length){
+    var visible = {};
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ visible[en.target.id] = en.isIntersecting ? en.intersectionRatio : 0; });
+      var best = null, bestR = 0;
+      ids.forEach(function(id){ var r = visible[id] || 0; if(r > bestR){ bestR = r; best = id; } });
+      if(best){ links.forEach(function(l){ l.classList.remove('active'); }); map[best].classList.add('active'); }
+    }, { rootMargin: '-52px 0px -55% 0px', threshold: [0, .25, .5, 1] });
+    ids.forEach(function(id){ io.observe(document.getElementById(id)); });
+  }
+})();
+</script>
