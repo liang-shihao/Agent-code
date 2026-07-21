@@ -195,6 +195,33 @@
   .decisions{display:flex;flex-direction:column;gap:10px}
   .dec{border-left:3px solid var(--amber);background:var(--surface-2);padding:10px 14px;border-radius:0 8px 8px 0;
     font-size:13.5px;color:var(--ink-soft)}
+  .dec b{color:var(--ink)}
+  /* deep-mechanism block (dark, signals "线级细节") */
+  .blk.deep{background:var(--navy);border-radius:12px;padding:16px 18px 4px;margin:0 0 20px}
+  .blk.deep h4{color:var(--amber-glow)}
+  .blk.deep h4::before{background:var(--amber-glow)}
+  .blk.deep p{color:#c2cedb;max-width:none}
+  .blk.deep p b{color:#fff}
+  .blk.deep code.inl{background:rgba(255,255,255,.09);border-color:rgba(150,180,210,.28);color:#eaf0f6}
+  .blk.deep ul.clean li{color:#c2cedb;max-width:none}
+  .blk.deep ul.clean li::before{color:var(--amber-glow)}
+  .blk.deep pre{margin:14px 0;background:#081320;border:1px solid rgba(150,180,210,.18)}
+  /* term grid */
+  .terms{display:grid;grid-template-columns:1fr 1fr;gap:11px 22px;margin:4px 0 4px}
+  @media (max-width:640px){.terms{grid-template-columns:1fr}}
+  .terms .tm{font-size:13px;color:var(--ink-soft);line-height:1.5}
+  .terms .tm b{display:block;color:var(--ink);font-family:var(--mono);font-size:12.5px;margin-bottom:2px}
+  .blk.deep .terms .tm{color:#c2cedb}
+  .blk.deep .terms .tm b{color:var(--amber-glow)}
+  /* deep-dive group */
+  .group-head{display:flex;align-items:center;gap:14px;margin:30px 0 18px}
+  .group-head .bar{height:1px;flex:1;background:var(--line)}
+  .group-head span{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--amber-deep);font-weight:700;white-space:nowrap}
+  .sum-key.tag{min-width:auto;padding:0 11px;font-size:11px;letter-spacing:.06em;height:26px;align-self:flex-start;margin-top:3px}
+  .nums{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+  .num{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);border:1px solid var(--line);
+    color:var(--ink-soft);padding:3px 9px;border-radius:6px;font-variant-numeric:tabular-nums}
 
   /* roadmap specific */
   .rm-goal{background:var(--navy);color:#dbe6f0;border-radius:11px;padding:14px 16px;font-size:14px;margin-bottom:18px}
@@ -242,7 +269,7 @@
         <p class="hero-lead">一个只会"描述"如何修 bug 的大模型，只有当一个<b>循环</b>让它能打开文件、跑测试、读报错、再重试时，才成为智能体。2026 年行业的共识很直白：<b>真正的产品是 harness（外壳），不是模型。</b>本页拆解这层外壳——它的演进史、主流框架能力，以及如何从零开始、一步步把它构建出来。</p>
         <div class="hero-stats">
           <div class="stat"><div class="n">35</div><div class="l">主流框架 / SDK</div></div>
-          <div class="stat"><div class="n">6</div><div class="l">核心架构组件</div></div>
+          <div class="stat"><div class="n">6+6</div><div class="l">架构组件 + 深入专题</div></div>
           <div class="stat"><div class="n">9</div><div class="l">阶段构建路线</div></div>
           <div class="stat"><div class="n">5</div><div class="l">发展时代</div></div>
         </div>
@@ -671,7 +698,7 @@ messages = [system, user_prompt]
     <div class="sec-head">
       <div class="kick"><span class="idx">03</span><span class="eyebrow">拆开外壳 · 6 大组件</span></div>
       <h2>架构原理：harness 由什么构成</h2>
-      <p>把一个无状态聊天模型变成智能体的，是这六层。它们大体互相独立，可以逐个理解、逐个加固。每个组件都给出「是什么 / 怎么工作 / 关键设计抉择 / 常见陷阱 / MVP vs 成熟版」。点击展开。</p>
+      <p>把一个无状态聊天模型变成智能体的，是这六层。它们大体互相独立，可以逐个理解、逐个加固。每个组件都给出「是什么 / 怎么工作 / <b>深入机制（线级协议与逐工具实现）</b> / 关键设计抉择 / 常见陷阱 / MVP vs 成熟版」。之后另有一组 <b>6 个「深入专题」</b>，对 MCP 协议、缓存与推理经济学、代码检索、互操作协议、会话状态、评估 harness 做实现级(implementation-grade)的深挖。点击展开。</p>
     </div>
     <div class="acc">
 
@@ -685,6 +712,27 @@ messages = [system, user_prompt]
         <div class="item-detail">
           <div class="blk"><h4>是什么</h4><p>每个编码智能体核心的那个小控制结构：持有一段不断增长的对话，问模型下一步做什么，执行它请求的工具，把结果追加回对话，然后重复，直到模型给出一轮没有工具调用的回复。它是 ReAct 的务实后代，但 2026 年的生产工具都建立在供应商原生的 function/tool-calling API 上，而非解析自由文本的 "Thought/Action/Observation"。</p></div>
           <div class="blk"><h4>怎么工作</h4><p>状态是一个有序的 <code class="inl">messages</code> 数组 + 静态前缀(system prompt + 每个工具的 JSON Schema)，整个数组每轮全量重发——因此不加缓存时 token 成本是二次方的。模型的一轮回复是若干内容块：<code class="inl">text</code>、<code class="inl">thinking</code>、以及请求工具的 <code class="inl">tool_use</code> 块。你必须在下一条 <code class="inl">user</code> 消息里，用 id 严格匹配地回答每一个 tool_use（<code class="inl">tool_result</code>）。<b>最重要的细节是终止</b>：循环在模型产出"零个 tool_use"的一轮时结束——"没有工具调用"就是完成信号，默认没有别的。只读工具(Read/Glob/Grep)可并行，改状态的工具(Edit/Write/Bash)串行执行以免冲突。</p></div>
+          <div class="blk deep"><h4>深入机制 · 线级协议、流式与终止</h4>
+            <p>一次 assistant 回合是一个<b>内容块列表</b>。工具请求是一个 <code class="inl">tool_use</code> 块;你必须在下一条 <code class="inl">user</code> 消息里用<b>逐一匹配的</b> <code class="inl">tool_result</code> 回答每一个——id 必须对齐、顺序与完整性都是承重的,漏一个或错配就是硬 API 报错。工具结果永远是 <code class="inl">role:user</code>("环境以用户身份说话")。</p>
+            <pre><span class="c">// assistant 回合(模型输出)</span>
+{ "role":"assistant", "content":[
+  { "type":"text", "text":"我先看下这个文件" },
+  { "type":"tool_use", "id":"toolu_01A…", "name":"read",
+    "input":{ "path":"src/app.ts" } } ] }
+<span class="c">// 你必须回的下一条(环境→模型)</span>
+{ "role":"user", "content":[
+  { "type":"tool_result", "tool_use_id":"toolu_01A…",
+    "content":"1\timport …", "is_error":false } ] }</pre>
+            <p><b>终止由 <code class="inl">stop_reason</code> 驱动</b>,是循环里最关键的分支:</p>
+            <div class="terms">
+              <div class="tm"><b>end_turn</b>模型给出纯文字、无工具调用 → 主终止,把控制权交回用户。</div>
+              <div class="tm"><b>tool_use</b>本回合请求了工具 → 执行、回填、继续循环。</div>
+              <div class="tm"><b>max_tokens</b>被截断在半途 → 不是完成!成熟循环发起续写请求,MVP 常误判为结束。</div>
+              <div class="tm"><b>refusal / pause_turn</b>模型拒答 / 长任务暂停 → 各自的处理路径。</div>
+            </div>
+            <p>Claude Code SDK 把这一切表面成一个<b>类型化事件联合体</b>:<code class="inl">SystemMessage(init)</code> → 每回合 <code class="inl">AssistantMessage</code>/<code class="inl">UserMessage</code> → 收尾 <code class="inl">ResultMessage</code>;<code class="inl">ResultMessage.subtype</code> 给出 <code class="inl">success | error_max_turns | error_max_budget_usd | error_during_execution</code>。Gemini CLI 的流暴露约 18 种事件类型。流式下工具输入以<b>部分 JSON 增量</b>到达,harness 必须缓冲到该 tool_use 的 input 完整才派发,否则发出畸形参数。</p>
+            <p><b>两种终止哲学:</b>隐式(无工具调用=完成,Claude Code/Codex/Gemini)vs 显式终止工具(<code class="inl">attempt_completion</code>/<code class="inl">finish</code>,OpenHands/Cline/AutoGPT 血统)。后者给出可解析的停止点、可挂"最终答案 schema",但有"永不调用(死循环)"或"过早调用"风险。Gemini CLI 还额外跑一个 <code class="inl">nextSpeakerChecker</code>——每回合后用一次便宜的 flash-lite 调用判断"该继续还是交回用户",能抓过早停止,但翻倍往返、增加延迟,本身也是 loop bug 之源。</p>
+          </div>
           <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
             <div class="dec"><b>终止信号：</b>隐式"无工具调用即完成"(Claude Code/Codex/Gemini) vs 强制模型调用显式 <code class="inl">finish</code>/<code class="inl">attempt_completion</code> 工具(OpenHands/Cline/AutoGPT 血统)。隐式更简单、让模型自然收尾；显式给出可解析的停止点，但有"永不调用(死循环)"或"过早调用"风险。</div>
             <div class="dec"><b>工具编码：</b>原生 function-calling(结构化、支持并行、贴合训练，但限于强模型) vs 文本/XML/diff 解析(通用、省 token、容错，但串行且重试更多)。Cline v3.35 从 XML 迁到原生、保留 XML 兜底，是这个取舍的典型。</div>
@@ -714,6 +762,17 @@ messages = [system, user_prompt]
         <div class="item-detail">
           <div class="blk"><h4>是什么</h4><p>一小组固定的、带 JSON Schema 的函数，模型调用它们来观察和改动代码库：读/写/改文件、跑 shell、搜代码(grep/glob)、抓网页。真正难的不是 schema，而是围绕它们的契约：编辑如何表示才能让随机性的模型可靠产出、执行前 harness 强制什么(权限/沙箱)、失败如何反馈让模型自纠错而非空转。<b>循环质量——而非 schema——才是"可用智能体"与"烧 token 机器"的分水岭。</b></p></div>
           <div class="blk"><h4>怎么工作 · 编辑是核心难题</h4><p>LLM 无法可靠产出带行号的 unified diff(会数错行号)，而全文件重写既费 token 又诱发"偷懒"(输出 <code class="inl">// ...其余不变...</code>)。生态收敛到约 4 种表示：<b>①SEARCH/REPLACE</b>(字符串锚定，old_string 须唯一，Claude Code/Aider/Cline 的默认)；<b>②全文件写入</b>(最简单但费 token)；<b>③简化 unified diff</b>(去掉行号、模糊匹配，Aider udiff 让 GPT-4T 偷懒率降 3 倍)；<b>④上下文锚定 patch 文法</b>(OpenAI V4A/apply_patch，靠匹配周围行而非行号，但模型是专门训练过的，换非 OpenAI 模型就失灵)。落地时按"精确匹配 → 去尾空格 → 归一化换行 → 缩进容忍 → 阈值模糊"逐级回退，<b>低于置信阈值就拒绝并报精确错误，绝不破坏性地猜。</b></p></div>
+          <div class="blk deep"><h4>深入机制 · 四种编辑表示与逐工具实现</h4>
+            <div class="terms">
+              <div class="tm"><b>① SEARCH/REPLACE(字符串锚定)</b>模型给字面 old_string + new_string,harness 找唯一匹配替换,无行号。Claude Code 的 Edit、Anthropic <code class="inl">str_replace_based_edit_tool</code>、Aider "diff"、Cline <code class="inl">replace_in_file</code>、OpenHands <code class="inl">str_replace_editor</code> 都是它。安全默认。</div>
+              <div class="tm"><b>② 全文件(write_to_file)</b>模型吐整个新文件。零匹配失败,但费 token 且诱发"偷懒"(<code class="inl">// ...unchanged...</code>)。用于新建/整体重写。</div>
+              <div class="tm"><b>③ 简化 unified diff(Aider udiff)</b>去掉 hunk 头行号、靠上下文模糊匹配。Aider 实测让 GPT-4T 偷懒率降 3 倍(20%→61%),因为它促使模型重写整个函数。</div>
+              <div class="tm"><b>④ 上下文锚定 patch 文法(V4A / apply_patch)</b>OpenAI 的 <code class="inl">*** Begin Patch / *** Update File / @@ 上下文 / -旧 / +新</code>,一个信封含增删改移;<b>模型被专门训练</b>过——换非 OpenAI 模型就失灵。经 <code class="inl">process_patch</code> 走文件系统,不走 shell。</div>
+            </div>
+            <p><b>落地匹配机制:</b>先试精确字节匹配,失败逐级升级(去尾空格 → 归一化 CRLF/LF → 缩进容忍 → 相似度模糊);OpenCode 据报串了 9 个匹配器;Cline 做了"顺序无关的多 diff 应用"让乱序块也能整批落地;然后算出新文件、(可选)展示 diff 供批准、原子写(temp+rename)、更新记录的 mtime。<b>绝不静默应用低于阈值的模糊匹配。</b>另有"apply model"变体(Cursor 式):聪明模型松散说"改什么",便宜专用模型把它变成精确字节。</p>
+            <p><b>其余工具的关键细节:</b> <code class="inl">bash</code> 输出封顶(Claude Code 30k 字符、150k 天花板),溢出则把全量写盘、只回路径 + head 预览让模型 grep;支持 <code class="inl">run_in_background</code>;描述主动把模型从 <code class="inl">find/grep/cat/sed</code> 引导向专用工具。<code class="inl">grep</code> 由 ripgrep 支撑(尊重 .gitignore、全正则、<code class="inl">output_mode</code> 选 files/content/count),<code class="inl">glob</code> 按 mtime 排序(最近改的通常最相关)。<code class="inl">web_fetch(url,prompt)</code> 把 HTML 转 markdown 后交一个小快模型按 prompt 作答(巨页不进主上下文);HTTP 升 HTTPS、跨主机重定向<b>返回给模型而非自动跟随</b>(挡住重定向绕过白名单)、域名 allow/deny 在权限层用 <code class="inl">WebFetch(domain:…)</code> 强制。</p>
+            <p><b>错误串是模型唯一的感官反馈</b>,是一等设计面:①具体(命名工具+失败类型+触发输入:"old_string 未找到" vs "匹配 3 处,加上下文");②可操作(追加"别用相同参数重试"在非正式测试里把相同重试从 ~60% 降到 ~10%);③清晰终止态(SUCCESS/FAILED);④原样回传编译/测试/lint 输出;⑤N 次相同失败后升级/退出(OpenCode 记录在案的无限编辑重试 bug 就是反例)。</p>
+          </div>
           <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
             <div class="dec"><b>编辑表示是最大的分叉：</b>字符串锚定 SEARCH/REPLACE(安全默认，无行号运算) vs 全文件(最简但费 token) vs 训练过的 patch 文法 V4A(最可靠但只服务于训练它的那个模型)。除非你自己拥有模型，选 SEARCH/REPLACE。</div>
             <div class="dec"><b>匹配严格度：</b>只精确匹配(可预测但脆，一个尾空格就失败) vs 模糊(救回更多但可能改错位置)。共识：逐级容忍回退，但低于阈值就带好错误信息拒绝。</div>
@@ -743,6 +802,18 @@ messages = [system, user_prompt]
         <div class="item-detail">
           <div class="blk"><h4>是什么</h4><p>由于循环每步都把整段对话重发给模型，上下文只增不减：每次工具调用都追加调用本身 + 它(往往巨大)的结果。管理发生在四层：<b>①预算与度量</b>(在窗口里量了多少)、<b>②压缩/摘要</b>(满了怎么办)、<b>③持久记忆文件</b>(CLAUDE.md/AGENTS.md/GEMINI.md)与检索(每轮拉对的上下文进来)、<b>④prompt 缓存</b>(让由此产生的巨大稳定前缀重发起来又便宜又快)。</p></div>
           <div class="blk"><h4>怎么工作 · 压缩的三个层级</h4><p><b>层1 工具结果卸载(最便宜，无模型调用)：</b>把臃肿的工具输出写到盘上，行内换成一个可再读的引用/路径——因为工具输出通常占了 token 大头，这一招就回收了大部分窗口。<b>层2 就近截断：</b>成对(user/assistant)地丢最旧的轮次以保结构。<b>层3 LLM 摘要(full compact)：</b>在 ~80-90% 时用专门 prompt 把 transcript 提炼成"目标/决策/改过的文件/待办/报错/下一步"，用摘要替换旧消息，再做 rehydration(重读近期文件、恢复待办、重新注入 CLAUDE.md)。OpenHands 把压缩记为事件流里的一个 CondensationAction，用重放算出视图，让压缩可审计、condenser 无状态。</p></div>
+          <div class="blk deep"><h4>深入机制 · 度量、Condenser 变体与事件溯源</h4>
+            <p><b>正确的度量分母是"总窗口占用 = input + cache-creation + cache-read + output"</b>,不是只看 input_tokens(缓存 token 仍占窗口)。阈值触发时必须为"下一轮输出 + 压缩调用本身"预留缓冲。各家阈值:Claude Code ~80-95%(<code class="inl">CLAUDE_AUTOCOMPACT_PCT_OVERRIDE</code> 可调)、Codex <code class="inl">model_auto_compact_token_limit</code>(~180k-244k、只能调低)、Gemini CLI 早压缩 ~50%。</p>
+            <p><b>OpenHands 把压缩形式化为 Condenser</b>(<code class="inl">condense(events) → events</code>),给出可插拔变体:</p>
+            <div class="terms">
+              <div class="tm"><b>RecentEvents</b>直接丢旧事件——便宜、确定,但忘掉早期决策。</div>
+              <div class="tm"><b>LLMSummarizing(默认)</b>keep_first N + 摘要中段 + 保留近期,语义保真但有一次模型调用、且有损。</div>
+              <div class="tm"><b>StructuredSummary</b>用 function-calling 填 ~18 个固定字段——可预测、机器可解析,但僵硬。</div>
+              <div class="tm"><b>LLMAttention</b>让模型按相关性给事件排序后取舍。</div>
+            </div>
+            <p>关键架构选择:把压缩记为 append-only 日志里的一个 <code class="inl">CondensationAction</code> 事件,视图 = 重放(日志 − 被遗忘 + 摘要),从而让 condenser 无状态、全量日志可审计可回退。压缩可在<b>回合中途的工具循环边界</b>触发(Codex),而不只在用户回合之间。Codex 对自家模型走 <code class="inl">compact()</code> API 返回不透明的 <code class="inl">encrypted_content</code> 密文(服务端解密无损恢复隐状态,但供应商锁定、不可移植);对开源模型则用本地摘要 prompt + handoff prompt。Cline 成对(user/assistant)删除并按目标窗口缩放力度(200k→64k 时删 ~75%),并区分 <code class="inl">/smol</code>(原地压缩保动量)与 <code class="inl">/newtask</code>(只打包 计划+文件+下一步 到干净窗口)。</p>
+            <p><b>压缩后的 rehydration 不可省</b>:重读近期文件、恢复待办、重注入 CLAUDE.md,否则智能体在已改过的文件上按陈旧心智模型继续。<b>记忆文件层级</b>(enterprise&gt;project&gt;dir&gt;user)每轮拼进 system prompt,<code class="inl">@path</code> 导入行内展开(是组织手段、不省上下文),祖先文件启动即全量加载、子目录文件按需加载(避免 monorepo 膨胀)。<span style="color:#8ea1b3">↳ prompt 缓存与结构化 repo-map 检索的完整机制,见下方「深入专题」的<b>缓存与推理经济学</b>、<b>代码智能与检索</b>两卡。</span></p>
+          </div>
           <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
             <div class="dec"><b>触发阈值：</b>高(~90%+，最大化利用但风险是下一轮很大就没空间做摘要调用) vs 早(~50%，Gemini CLI，稳但浪费窗口、压缩更频繁)。必须为"输出 + 摘要调用本身"预留缓冲。</div>
             <div class="dec"><b>度量基准：</b>事件/消息计数(简单但每事件 token 差异极大，仍会溢出) vs 含缓存 token 的真实 token 核算(准确，需要 tokenizer 或计数端点)。</div>
@@ -773,6 +844,17 @@ messages = [system, user_prompt]
         <div class="item-detail">
           <div class="blk"><h4>是什么</h4><p>坐在"LLM 提议的工具调用"与"真正执行"之间的一层，决定什么静默运行、什么暂停问人、什么彻底禁止。它组合了策略引擎(对 工具+参数 模式的 allow/ask/deny 规则)、交互模式(plan/auto-accept/bypass)、以及 OS 或容器级沙箱(即便面对被攻陷或失控的智能体也能强制文件系统与网络边界)。目的是纵深防御:对安全操作降低批准疲劳,对破坏性/外泄操作硬性拦截——因为<b>模型本身不能当最后一道防线</b>。</p></div>
           <div class="blk"><h4>怎么工作 · 两道分离的闸</h4><p>成熟工具刻意区分两个正交控制:<b>批准策略</b>决定"harness 何时必须暂停问人",<b>沙箱</b>决定"命令运行时技术上能做什么"——它们可组合(一个调用可被策略自动放行,却仍被沙箱限制)。策略引擎把每个调用按有序规则匹配,Claude Code 的经典顺序是 <code class="inl">deny → ask → allow</code> 首个匹配生效,且匹配必须<b>懂 shell</b>(<code class="inl">safe-cmd *</code> 规则绝不能匹配 <code class="inl">safe-cmd && rm -rf /</code>)。沙箱层用 macOS Seatbelt、Linux bubblewrap + seccomp/Landlock,规则须在 execvp 之前装好,所有子进程继承——一个 npm postinstall 脚本和父进程一样被关进盒子。域名级网络控制则靠用户态代理白名单实现(OS 沙箱只懂 socket、不懂域名)。</p></div>
+          <div class="blk deep"><h4>深入机制 · 规则引擎、OS 沙箱原语与网络代理</h4>
+            <p><b>规则求值:</b>Claude Code 的经典顺序是 <code class="inl">deny → ask → allow</code> 首个匹配生效,且<b>特异性不覆盖顺序</b>——宽泛的 <code class="inl">deny Bash(aws *)</code> 击败更窄的 <code class="inl">allow Bash(aws s3 ls)</code>;匹配到 <code class="inl">ask</code> 就触发,即便存在更具体的 allow。规则是 <code class="inl">Tool</code> 或 <code class="inl">Tool(specifier)</code> 模式(命令 glob 或路径 glob),如 <code class="inl">Bash(npm run test:*)</code>、<code class="inl">Read(./.env)</code>、<code class="inl">WebFetch(domain:api.github.com)</code>。匹配必须<b>懂 shell</b>:解析操作符而非朴素前缀,否则 <code class="inl">&&</code>/管道/<code class="inl">$()</code>/重定向轻易走私。配置分层合并 <code class="inl">enterprise > user > project > local</code>,任何来源的 deny 跨合并取胜——组织能锁死开发者无法放松的策略。</p>
+            <p><b>OS 沙箱原语(策略被绕过也守得住的那层):</b></p>
+            <div class="terms">
+              <div class="tm"><b>macOS Seatbelt</b>用 <code class="inl">sandbox-exec</code> 加一个生成的 <code class="inl">.sb</code> profile 限制文件系统/网络。</div>
+              <div class="tm"><b>Linux bubblewrap</b>建全新 mount+user+network 命名空间;配 <code class="inl">seccomp-BPF</code> 过滤系统调用(拦 connect/bind/listen、放行 AF_UNIX)和/或 <code class="inl">Landlock</code> 做写作用域。</div>
+              <div class="tm"><b>装载时机</b>规则须在 <code class="inl">execvp</code> 之前装好,子进程从第一条指令即受限;<code class="inl">PR_SET_PDEATHSIG</code> 让孤儿子进程随父而死。</div>
+              <div class="tm"><b>继承性</b>决定性优势:在内核/命名空间层强制,<b>所有子进程继承</b>——npm postinstall 与父进程一样被关进盒子。</div>
+            </div>
+            <p><b>网络域名过滤:</b>OS 沙箱粒度粗(只懂 socket),所以去掉沙箱的网络命名空间、把全部流量经 Unix socket 强制到一个查白名单的用户态代理(对被拒 CONNECT 回 403、对新域名提示),再用 seccomp 兜底那些忽略代理环境变量的工具。无深包检测,只在域名/CONNECT 级过滤。<b>隔离粒度:</b>worktree-per-agent 只隔离<b>文件</b>(共享对象库、near-instant、硬链接),一旦智能体绑端口/碰 DB/缓存就需要 container-per-agent(Docker,或更强的 Firecracker/E2B microVM、gVisor/runsc)。OpenHands 默认就是 Docker client-server Runtime。逃生舱("带批准重试非沙箱")能大幅降摩擦,但正是被注入/过热心的智能体用来"说服你放它出盒子"的杠杆——真实案例里智能体找到 <code class="inl">/proc/self/root/usr/bin/npx</code> 后试图论证关掉沙箱。<span style="color:#8ea1b3">↳ 拦截点之上的可编程 hooks(PreToolUse 等)与 checkpoints,见下方「深入专题」的<b>会话状态 / hooks / 可观测性</b>卡。</span></p>
+          </div>
           <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
             <div class="dec"><b>两轴分离 vs 一个旋钮：</b>把"何时问"(策略)与"能做什么"(沙箱)分开,才能实现"全部自动放行,但关在紧盒子里"这一推荐的自主配置。合并成一个 YOLO 开关更简单,却逼你做全有全无的安全选择。</div>
             <div class="dec"><b>强制位置：</b>prompt 级(最便宜,模型可无视——plan mode 会漏) → harness/应用级(对自家工具可靠,但被子进程绕过) → OS/内核级(子进程继承,唯一能扛住 shell 出来的二进制)。成熟工具三层叠加。</div>
@@ -802,6 +884,15 @@ messages = [system, user_prompt]
         <div class="item-detail">
           <div class="blk"><h4>是什么</h4><p>把模糊的人类请求变成有序、可追踪的可执行步骤;当任务大到一个上下文窗口/一个智能体装不下时,把它拆到多阶段、多文件或多个协作智能体。四种由轻到重的机制:<b>①</b>模型写给自己的会话内 todo 列表;<b>②</b>把写操作挡在人工批准后的只读 plan mode;<b>③</b>把需求/设计/任务持久化为版本化产物的 spec-first 流;<b>④</b>把工作扇出到隔离上下文的子/多智能体编排。共同目标是对抗长跨度编码的两大失败模式:<b>目标漂移</b>与<b>上下文耗尽</b>。</p></div>
           <div class="blk"><h4>怎么工作</h4><p>这些几乎都是"普通工具 + system prompt 纪律",而非模型特殊能力。<b>Todo 列表</b>(TodoWrite/update_plan/write_todos)每次调用传入整个列表并覆盖(幂等替换,不是追加),没有引擎"执行"它——它是个自我提示脚手架,价值在于每轮重新注入列表把目标钉在上下文里。<b>Plan mode</b> 实现为一个模式标志,换掉工具白名单(只留只读)与 system prompt——写工具从工具集里物理消失,模型想改也改不了;回到执行本身是一个 <code class="inl">exit_plan</code> 工具,展示计划并阻塞到人工批准。<b>子智能体</b>:一个 Task/delegate 工具生成一个带干净上下文、自己的 system prompt 和(常常)自己模型的全新智能体,跑完只回一段文字摘要、其上下文被丢弃——这就是核心的上下文隔离技巧。</p></div>
+          <div class="blk deep"><h4>深入机制 · 四种由轻到重的实现</h4>
+            <div class="terms">
+              <div class="tm"><b>Todo 列表(TodoWrite / update_plan / write_todos)</b>单次调用传入<b>整个</b>列表并覆盖(幂等替换,非追加),项为 <code class="inl">{content, status: pending|in_progress|completed}</code>。没有引擎"执行"它——纯自我提示脚手架;每轮重注入把目标钉在上下文里、给用户进度视图。系统 prompt 规则驱动:"3+ 步才用""恰好一个 in_progress""完成即刻标记""测试没过绝不标完成"。</div>
+              <div class="tm"><b>Plan mode(工具集切换)</b>一个模式标志换掉工具白名单(只留 Read/Grep/Glob/WebFetch)与 system prompt——写工具<b>从工具集物理消失</b>。回到执行是一个 <code class="inl">exit_plan(plan_text)</code> 工具:展示计划、阻塞到人工批准,批准才解锁写工具。Cline 把模式存在 StateManager 单例并广播给 webview,可 per-mode 加载不同模型+prompt。</div>
+              <div class="tm"><b>Spec-first(盘上产物流水线)</b>GitHub Spec Kit:<code class="inl">/speckit.specify → .plan → .tasks → .implement</code>(+ constitution/analyze);AWS Kiro:<code class="inl">requirements.md → design.md → tasks.md</code> 带逐阶段批准闸 + 保存即跑测试/lint 的 Hooks。计划<b>外置到文件</b>,挺过会话/上下文重置,能像代码一样 diff 审查。</div>
+              <div class="tm"><b>子/多智能体委派</b>一个 Task/delegate 工具生成带干净上下文、独立 prompt、(常)独立模型的子体;OpenHands 实现为一等 <code class="inl">AgentDelegateAction</code> 事件(父 AgentController 起子 controller);Claude Code 的 Agent Teams(实验)更进一步:共享任务表 + 状态/依赖跟踪 + 点对点消息 + 文件锁,每个队友是自己 tmux 面板里的完整 Claude 实例。</div>
+            </div>
+            <p><b>Aider 的 architect/editor 分离</b>是按"模型角色"而非仓库访问来拆:架构模型用散文推理改动,再把文本交给一个只负责用严格编辑格式吐 diff 的、更便宜的 editor 模型——实测既提分又省 30-50% 成本(费 token 的 diff 生成跑在便宜模型上)。Codex 的 <code class="inl">PLANS.md</code> 模式(带 Progress / Surprises / Decision Log / Retrospective 段)支撑过单 prompt 7+ 小时的运行。</p>
+          </div>
           <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
             <div class="dec"><b>强制 vs 建议：</b>plan mode 可以是硬闸(写工具从工具集移除——Claude Code/Cline)或软约定(prompt 说"先规划"——Codex 一两句计划)。硬闸防跑飞但有摩擦。</div>
             <div class="dec"><b>计划住哪：</b>在上下文里(todo)便宜但随会话消失;在盘上(spec 文件)能扛住上下文重置、支持多小时/多会话,但有仪式感且可能与代码漂移。</div>
@@ -832,6 +923,19 @@ messages = [system, user_prompt]
         <div class="item-detail">
           <div class="blk"><h4>是什么</h4><p>"harness"是 LLM API 调用周围的全部代码:组装 prompt(系统指令 + 工具 schema + 对话历史)、跑 reason→act→observe 循环、派发工具调用、把结果喂回、管理上下文增长、拦截危险动作、决定何时停。模型提供推理与选择下一步;harness 提供原始模型做不到的一切——持久化、记忆、碰文件/shell/网的能力、安全与迭代。2026 年 3 月 Claude Code 源码泄露后行业共识很直白:<b>harness、而非模型,才是产品。</b></p></div>
           <div class="blk"><h4>怎么工作 · System Prompt 是分层组装的</h4><p>system prompt 不是一根字符串,而是由稳定段与易变段组合而成,排序刻意让稳定前缀能被 prompt 缓存(重复前缀省 ~90% token)。典型 Claude Code 分层:(a) 身份/人格 → (b) 行为规则(简洁输出、别擅自加注释、别擅自提交、prompt 注入护栏) → (c) 工具使用策略(用 Read 别用 cat、批量并行、一次一个 in_progress) → (d) 环境块(cwd/OS/git 状态/日期——易变,放后面减少缓存失效) → (e) 项目记忆(CLAUDE.md) → (f) 会话状态。<b>工具描述本身就是 prompt 工程</b>:何时用、何时别用、前置条件、示例,都是承载行为契约的指令文本。流式经 SSE 增量到达,工具参数片段要累积到完整 JSON 才派发;AbortSignal 贯穿整条调用以支持中断,计数器/锁要在 finally 里释放。</p></div>
+          <div class="blk deep"><h4>深入机制 · Prompt 分层、工具描述与模型路由</h4>
+            <p><b>System prompt 是分层组装的</b>,排序刻意让稳定前缀能被缓存(见下方缓存卡)。典型 Claude Code 分层,从最稳到最易变:</p>
+            <div class="terms">
+              <div class="tm"><b>(a) 身份/人格</b>"You are Claude Code…"。</div>
+              <div class="tm"><b>(b) 行为规则</b>简洁输出、别擅自加注释/提交、git 安全、prompt 注入护栏(继续前先标记可疑注入)。</div>
+              <div class="tm"><b>(c) 工具使用策略</b>用 Read 别用 cat、批量并行、一次一个 in_progress。</div>
+              <div class="tm"><b>(d) 环境块</b>cwd/OS/git 状态/日期——<b>易变,放后面</b>以最小化缓存失效。</div>
+              <div class="tm"><b>(e) 项目记忆</b>CLAUDE.md / AGENTS.md / GEMINI.md 拼入。</div>
+              <div class="tm"><b>(f) 会话状态</b>todo 列表、当前模式等。</div>
+            </div>
+            <p><b>工具描述本身就是 prompt 工程</b>:每个工具 = JSON-schema 函数 + 一段自然语言描述,那段描述实为指令文本,承载行为契约——"用 Grep 别用 bash grep""编辑前必须先 Read""apply_patch 后别再读该文件——若没应用成功这次调用会报错"。两种派发风格:原生 function-calling(供应商把工具调用解析成结构化对象)vs 自解析 XML/文本(Cline 旧变体、Aider 的 SEARCH/REPLACE 编辑块)——后者能跑没有原生工具支持的模型,但要自写解析器 + 修复逻辑(把 <code class="inl">Read</code> 纠成 <code class="inl">read</code>、把畸形调用路由到一个 'invalid' 工具让模型自纠)。</p>
+            <p><b>模型路由两种模式:</b>①按角色——强推理模型规划、便宜/快模型执行或编辑(Aider architect/editor、Cline Plan/Act);②按子任务——大模型驱动主循环,小模型(Haiku)干机械活:摘要/压缩、子体搜索、commit 消息。Aider 还按模型强弱<b>匹配编辑格式</b>(强→diff、弱→全文件)。Claude Code 的硬核细节(经 2026-03 源码泄露公开):约 <b>2592 行 / 23 项编号检查</b>的 bash 安全校验器、写死的 prompt 注入护栏、反蒸馏防御(注入假工具定义、摘要化推理)。OpenHands 把 agent 建模为"从不可变事件流到下一事件的纯函数",使暂停/恢复/fork/确定性重放/审计成为可能。<span style="color:#8ea1b3">↳ 可观测性/tracing 与事件溯源的完整机制,见「深入专题」的<b>会话状态 / hooks / 可观测性</b>卡。</span></p>
+          </div>
           <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
             <div class="dec"><b>原生 function-calling vs 自解析 XML/文本：</b>原生健壮、供应商维护但锁定支持它的模型;XML/文本(Cline 变体、Aider 编辑块)能跑任意模型但要自写解析器 + 工具名/参数修复。</div>
             <div class="dec"><b>单智能体循环 vs 多智能体编排：</b>Claude Code/Codex/Gemini 刻意保持一个推理循环 + 扁平消息列表以求可预测可调试;多智能体加能力也加协调成本与非确定性。</div>
@@ -852,6 +956,330 @@ messages = [system, user_prompt]
         </div>
       </details>
 
+      <div class="group-head"><span>深入专题 · Deep Dives</span><div class="bar"></div></div>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key tag">MCP</span>
+          <span class="sum-body"><span class="sum-title">MCP 协议 · 智能体的可扩展插件接口</span>
+            <span class="sum-sub">host/client/server + JSON-RPC 2.0，让一个 client 消费上千个 server、一个 server 通吃所有宿主</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>MCP(Anthropic 2024-11 提出)是一个开放的 JSON-RPC 2.0 协议,标准化"LLM 宿主如何连接外部工具、数据与 prompt",让编码智能体有一个统一插件面,而非为每个集成写胶水。<b>一个 MCP client 实现就能消费任意社区/企业 server(GitHub、Postgres、Sentry、浏览器);反过来,一个 server 在 Claude Code / Cursor / Cline / Codex / Gemini CLI / Zed 之间零改动通用。</b></p></div>
+          <div class="blk deep"><h4>深入机制 · 拓扑、传输、生命周期与工具注入</h4>
+            <p><b>拓扑:</b>一个 HOST 进程(智能体应用)为每个 SERVER 起一个 CLIENT,各 client 与其 server 保持有状态 1:1 会话;host 把所有 server 的工具聚合进模型的工具 schema。<b>传输:</b>①stdio——server 作子进程,stdin/stdout 上换行分隔 JSON,本地默认、延迟最低;②Streamable HTTP(2025-03 起)——单端点 POST(客户端→服务端)+ 可选 GET 开 SSE 流,<code class="inl">Mcp-Session-Id</code> 头管会话,必须校验 Origin(不符回 403)防 DNS rebinding;③旧的双端点 HTTP+SSE 已废弃。</p>
+            <pre><span class="c">// 1) 握手：能力协商</span>
+→ initialize { protocolVersion, capabilities, clientInfo }
+← { protocolVersion, capabilities, serverInfo, instructions? }
+→ notifications/initialized
+<span class="c">// 2) 发现 → 注入模型 schema（命名空间化）</span>
+→ tools/list  ← { tools:[{ name, description, inputSchema(JSON-Schema), outputSchema? }] }
+   host 把每个 tool 译成 provider 原生函数 schema，名如 mcp__&lt;server&gt;__&lt;tool&gt;
+<span class="c">// 3) 模型发起调用 → host 回映射</span>
+→ tools/call { name, arguments }
+← { content:[…], structuredContent?, isError }   // 工具错误 in-band 用 isError:true（让模型自纠），不是 JSON-RPC error</pre>
+            <p><b>三个 server 原语:</b>tools(模型控制的函数)、resources(URI 寻址的只读数据,用于注入上下文)、prompts(用户可选模板,常呈现为斜杠命令)。<b>三个 client 原语:</b>sampling(server 反过来请 host 跑一次 LLM 补全 → 嵌套智能体循环)、roots(把工作区目录边界告诉 server)、elicitation(2025-06 起,server 用 JSON schema 请求结构化用户输入,host 渲染表单)。<b>规范演进:</b>2025-06-18 加结构化输出(outputSchema)、elicitation、OAuth 2.1 资源服务器(RFC 8707 资源指示符绑定 token)、移除批处理;2025-11-25 加实验性异步 Tasks(<code class="inl">task{ttl}</code> → 立即返回 <code class="inl">taskId</code>,轮询 <code class="inl">tasks/get</code>/<code class="inl">tasks/result</code>)、OAuth CIMD/OIDC、图标、JSON Schema 2020-12 为默认方言。</p>
+          </div>
+          <div class="blk"><h4>核心概念</h4><div class="terms">
+            <div class="tm"><b>Host / Client / Server</b>host 是智能体应用,为每个 server 起一个 client 维持有状态 1:1 会话;host 负责聚合、鉴权与模型循环。</div>
+            <div class="tm"><b>能力协商 initialize</b>双方各自声明 capabilities;某特性只有双方都声明才可用。</div>
+            <div class="tm"><b>Tools / Resources / Prompts</b>模型控制的函数 / 应用控制的只读数据 / 用户可选的 prompt 模板——三种 server 原语各司其职。</div>
+            <div class="tm"><b>Sampling / Roots / Elicitation</b>client 侧能力:server 借宿主跑 LLM、获知目录边界、中途索要结构化用户输入。</div>
+            <div class="tm"><b>结构化工具输出</b>2025-06 起 tool 声明 outputSchema 并返回经校验的 structuredContent,同时把 JSON 复制进 text 块向后兼容。</div>
+            <div class="tm"><b>isError in-band</b>工具错误用 <code class="inl">isError:true</code> 在结果里返回(让模型自纠),而非 JSON-RPC 层错误。</div>
+          </div></div>
+          <div class="blk"><h4>关键设计权衡</h4><div class="decisions">
+            <div class="dec"><b>stdio vs Streamable HTTP：</b>stdio 最简、本地延迟最低但一进程一 server、无网络;HTTP 可远程/多客户端并支持 OAuth,但要 Origin 校验、会话管理与鉴权复杂度。</div>
+            <div class="dec"><b>工具命名空间与数量：</b>聚合太多 server 会撑爆模型工具表(涨 token、选错工具)——必须命名空间化(mcp__server__tool),并常做 gate/allowlist 或懒加载压小 schema。</div>
+            <div class="dec"><b>同步 tools/call vs 异步 Tasks：</b>阻塞调用简单但长任务卡住循环;Tasks 释放循环但要轮询、TTL/清理与 task-ID 访问控制。</div>
+            <div class="dec"><b>信任 server 文本：</b>工具描述与结果进入模型上下文,当作可信 vs 不可信,决定了对工具投毒与间接注入的暴露面。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱（安全面尤其重要）</h4><ul class="clean risk">
+            <li><b>工具投毒(tool poisoning):</b>server 在工具描述/schema 里埋对用户不可见、但被模型读到的恶意指令,劫持智能体外泄数据或跑命令——描述是不可信输入,不是文档。</li>
+            <li><b>Rug pull:</b>一次批准的工具日后悄悄改定义;宿主缓存了旧批准,新会话继承被投毒的定义——需版本钉定、描述哈希/签名、变更后重新批准。</li>
+            <li><b>经工具结果的间接注入:</b>返回内容(网页、issue 正文、DB 行)含对抗指令被模型照做——把结果当数据、沙箱化副作用、在 MCP 层校验 I/O。</li>
+            <li><b>混淆代理 / token 透传:</b>持有宽 OAuth 凭证的 server 被诱导替不该有权限的调用者行事——2025-06 用 RFC 8707 资源指示符把 token 绑定到特定 server 修复。</li>
+            <li><b>DNS rebinding:</b>不校验 Origin 或绑到 0.0.0.0,恶意网页就能打到 localhost MCP server——必须校验 Origin(403)并绑 localhost。</li>
+          </ul></div>
+          <div class="blk"><h4>关键数字</h4><div class="nums">
+            <span class="num">规范:2024-11 / 2025-03(Streamable HTTP) / 2025-06(结构化输出·OAuth) / 2025-11(异步 Tasks)</span>
+            <span class="num">JSON-RPC 错误码 -32700/-32600/-32601/-32602/-32603</span>
+            <span class="num">Claude Code 3 个配置作用域:local &gt; project(.mcp.json) &gt; user</span>
+            <span class="num">默认 JSON Schema 方言 2020-12</span>
+            <span class="num">RFC 8707 资源指示符 · RFC 9728 · PKCE 强制</span>
+          </div></div>
+          <div class="blk"><h4>真实集成（注意配置差异）</h4><ul class="clean">
+            <li><b>Claude Code</b>参考级 client:<code class="inl">claude mcp add</code>,工具名 <code class="inl">mcp__&lt;server&gt;__&lt;tool&gt;</code>,<code class="inl">/mcp</code> 驱动 OAuth 浏览器登录并自动刷新 token;stdio/SSE/HTTP 全支持,server prompts 呈现为斜杠命令。</li>
+            <li><b>Codex</b>是异类:用 TOML <code class="inl">~/.codex/config.toml</code> 的 <code class="inl">[mcp_servers.&lt;name&gt;]</code>;<b>Gemini CLI</b>用 <code class="inl">httpUrl</code>(不是 url)——从 Claude Code 复制的配置需改键。<b>Cursor/Cline/Zed</b>各有 JSON 配置;Zed 另把 MCP 作"context server",并经 ACP 把外部智能体作一等面板。</li>
+          </ul></div>
+        </div>
+      </details>
+<details class="item">
+        <summary>
+          <span class="sum-key tag">缓存</span>
+          <span class="sum-body"><span class="sum-title">Prompt 缓存与推理经济学</span>
+            <span class="sum-sub">为什么不缓存前缀的智能体循环是 O(n²)，以及 thinking / tool_choice / 约束解码怎么交互</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>智能体循环每轮重发一段不断增长的 transcript(system + 工具定义 + 全部历史工具调用/结果 + 新输入),而 LLM API 是无状态的——<b>不做服务端前缀缓存时,N 轮的累计 prefill 成本是 O(N²) token。</b>前缀缓存把重复前缀变成 ~0.1x 的 cache-read 而非全价重算,把循环累计成本从二次方压到近线性。理解缓存键怎么算(逐字节前缀匹配)、什么会悄悄失效、以及 thinking token / tool_choice / 约束解码如何交互,是构建时对成本与延迟最大的单一杠杆。</p></div>
+          <div class="blk deep"><h4>深入机制 · KV 缓存、失效层级与约束解码</h4>
+            <p><b>机制:</b>Transformer 的 prefill 为每个输入 token 算出每层的 key/value 张量("KV 缓存"),这是请求里最贵的计算密集部分;解码输出则是带宽密集、相对便宜。前缀缓存把这些 KV 张量按 token 序列的滚动哈希(通常按 ~128-token 页量化)持久化,后续共享前缀的请求复用已存 KV、只 prefill 新增后缀。<b>为什么 O(n²):</b>第 i 轮重发 ~c·i 的前缀,∑ = O(N²);有缓存后每轮只重算 ~常量后缀 + 对缓存前缀付 0.1x,累计变线性。</p>
+            <p><b>Anthropic(显式断点):</b>用 <code class="inl">cache_control:{type:"ephemeral"}</code> 标记边界,每请求最多 4 个;渲染/哈希顺序固定 <code class="inl">tools → system → messages</code>,断点缓存其之前的一切。定价:cache-read ~0.1x 输入价,cache-write 1.25x(5 分钟 TTL)/ 2x(1 小时 TTL)。回本点:5 分钟 TTL 第 2 次请求即回本,1 小时约需 3 次。最小可缓存前缀因模型而异(Sonnet 4.5 = 1024,Opus 4.x = 4096 token),不足则<b>静默不缓存</b>(cache_creation_input_tokens=0、无报错)。<b>失效是前缀精确的,且分层:</b></p>
+            <div class="terms">
+              <div class="tm"><b>改工具定义 / 换模型</b>炸掉全部三层(tools+system+messages)。</div>
+              <div class="tm"><b>改 system 内容</b>炸 system+messages,保住 tools。</div>
+              <div class="tm"><b>改 tool_choice / 开关 thinking / 图片变化</b>只炸 messages,保住 tools+system。</div>
+              <div class="tm"><b>20 块回溯窗口</b>断点最多回溯 ~20 个内容块找旧条目;长回合(许多 tool_use/tool_result 对)会超窗静默 miss,需每 ~15 块插一个中间断点。</div>
+            </div>
+            <p><b>OpenAI/Gemini(自动前缀缓存):</b>无断点,自动缓存最长已见前缀(≥1024 token、128 增量),无写入溢价、无额外费,折扣 50%(旧)~90%(新)。<b>Thinking/推理 token:</b>扩展思考产出的 thinking 块按输出 token 计费;同模型续接时必须<b>原样回传</b> thinking 块(签名校验,改动会 400),换模型则丢弃(不计费);OpenAI o 系列推理是加密不透明的 <code class="inl">encrypted_content</code>。thinking 块位于 messages 层,开关它只炸 messages 缓存。<b>约束解码(constrained decoding):</b><code class="inl">strict:true</code> 或 <code class="inl">output_config.format</code> 把 JSON Schema 编译成 token 级语法/FSM,解码每步屏蔽会违反语法的 token,<b>保证语法有效、合 schema 的输出</b>——这就是工具参数"保证有效"而非"祈祷有效"的原理;首次用某 schema 付一次编译延迟,之后 24 小时 schema 缓存。</p>
+          </div>
+          <div class="blk"><h4>核心概念</h4><div class="terms">
+            <div class="tm"><b>KV 缓存</b>prefill 产出的每层每 token 的 key/value 张量;前缀缓存持久化它以跳过重算——请求里最贵的部分。</div>
+            <div class="tm"><b>逐字节前缀匹配</b>缓存键取渲染后 prompt 到断点为止的精确字节;前缀里任何一字节不同,就让该位置起的一切失效——一切规则的根源。</div>
+            <div class="tm"><b>cache-read vs cache-write</b>读 ~0.1x、写 1.25x(5min)/2x(1h);OpenAI/Gemini 自动缓存无写入溢价。</div>
+            <div class="tm"><b>分层失效</b>tools/system/messages 三层;改工具/换模型炸全部,改 system 炸后两层,改 tool_choice/thinking 只炸 messages。</div>
+            <div class="tm"><b>推理/thinking token</b>按输出计费;Anthropic 同模型须原样回传(签名校验),OpenAI 返回加密不透明推理。</div>
+            <div class="tm"><b>parallel_tool_calls</b>一回合可多个 tool_use;所有 tool_result 必须在<b>单条</b> user 消息里回,拆开会悄悄训练模型不再并行。</div>
+          </div></div>
+          <div class="blk"><h4>关键设计权衡</h4><div class="decisions">
+            <div class="dec"><b>断点位置：</b>把 cache_control 放在<b>稳定共享前缀的末尾</b>,而非整个 prompt 末尾——标在多变尾部会让每个请求都写一个永不被读的新条目(白付 1.25x 写入)。</div>
+            <div class="dec"><b>冻结 system prompt：</b>绝不把当前日期/用户 id/模式插进 system prompt(它在前缀 0 位,会炸掉一切);把易变上下文作为靠后的消息注入。</div>
+            <div class="dec"><b>工具集稳定 vs 动态：</b>工具在 0 位渲染,增删/重排任一工具炸掉整缓存;大/动态工具库用 tool-search(追加 schema 而非替换)保住 0 位缓存。</div>
+            <div class="dec"><b>循环中途换模型：</b>缓存按模型隔离,主循环换便宜模型会炸缓存——应为便宜模型开独立上下文的子智能体,而非切主循环的模型。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>system prompt 或工具定义里的一个 <code class="inl">datetime.now()</code>/UUID/未排序 <code class="inl">json.dumps()</code> 让每请求都炸缓存——diff 两次请求的渲染字节来定位。</li>
+            <li>断点标在含"本次问题"的整 prompt 末尾:每请求写新条目、无一被读,白付写入溢价。</li>
+            <li>前缀低于模型最小值(如 Opus 4.8 的 4096 floor 下的 3K)静默永不缓存,同 prompt 在 Sonnet 4.5 的 1024 floor 却能缓存,无报错。</li>
+            <li>把并行 tool_result 拆到多条 user 消息,悄悄训练模型停止并行,拖垮整会话吞吐。</li>
+            <li>N 个同前缀请求启动时齐发:缓存要等首个响应开始流式才可读,于是 N 个全付全价——先发一个、等首 token,再扇出。</li>
+          </ul></div>
+          <div class="blk"><h4>关键数字（2026）</h4><div class="nums">
+            <span class="num">读 ~0.1x · 写 1.25x(5min)/2x(1h)</span>
+            <span class="num">回本:5min→2 次请求 · 1h→~3 次</span>
+            <span class="num">最多 4 断点 · 20 块回溯窗口</span>
+            <span class="num">最小前缀:1024(Sonnet 4.5)/2048/4096(Opus)</span>
+            <span class="num">Opus 4.8 $5/$25 · Sonnet 5 $3/$15 · Haiku 4.5 $1/$5(每 1M)</span>
+            <span class="num">约束解码:首次编译 + 24h schema 缓存</span>
+          </div></div>
+          <div class="blk"><h4>真实实现</h4><ul class="clean">
+            <li><b>Claude Code / Agent SDK</b>前置冻结 system + 确定性工具表,断点让每轮以 0.1x 重读旧 transcript,新 tool_result 追加在末断点之后——把长会话的累计 prefill 从 O(n²) 压到近线性。</li>
+            <li><b>Aider/Cline/OpenHands</b>把稳定的 repo-map/文件上下文作可缓存前缀并保持逐字节不变以命中缓存,变化的 diff/指令放最后。<b>vLLM/SGLang</b>(自托管)用块级 KV 哈希(SGLang 的 RadixAttention)在自己 GPU 上实现同样的 O(n²)→O(n)。</li>
+          </ul></div>
+        </div>
+      </details>
+<details class="item">
+        <summary>
+          <span class="sum-key tag">检索</span>
+          <span class="sum-body"><span class="sum-title">代码智能与上下文检索</span>
+            <span class="sum-sub">模型编辑前，谁来决定把仓库的哪一小片放到它面前：repo map / LSP / 嵌入 RAG / 纯 agentic 搜索</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>LLM 编辑代码前,必须有东西决定把一个动辄百万 token 的仓库的哪一片放到它面前。2026 年四大流派:①静态计算、按图中心性给符号排名的 <b>repo map</b>(Aider);②把编译器/语言服务器情报喂回循环的 <b>LSP 智能</b>(opencode/Zed);③对分块代码做 <b>嵌入 RAG</b>(Cursor 服务端索引);④模型自己驱动 grep/glob/read、无索引的 <b>纯 agentic 搜索</b>(Claude Code)。这是编码智能体里杠杆最高的架构决策——它定了召回率、延迟、token 成本、隐私姿态与降级方式。<b>2025-26 的显著趋势:前沿终端智能体大多放弃了嵌入,转向 agentic 搜索(并日益叠加 LSP 信号)。</b></p></div>
+          <div class="blk deep"><h4>深入机制 · Aider repo map 的完整算法</h4>
+            <p><b>解析:</b>每个文件按扩展名选 tree-sitter 语法,用一段 <code class="inl">tags.scm</code> S-表达式查询捕获 <code class="inl">name.definition.*</code> 与 <code class="inl">name.reference.*</code> 节点,产出 <code class="inl">Tag(file, name, kind, line)</code>;缺 tags 查询的语言退回 Pygments 词法器(仅 references)。结果按文件 mtime 缓存在 <code class="inl">.aider.tags.cache.v4</code>(diskcache)。<b>建图 + 排名:</b>建一个 networkx 有向多重图,节点是文件;对每个标识符,从<b>引用它的文件</b>向<b>定义它的文件</b>连边,边权 = <code class="inl">use_mul · sqrt(num_refs)</code>。乘子叠加:</p>
+            <pre><span class="c"># 边权乘子（都会相乘叠加）</span>
+ident in mentioned_idents      → mul ×= 10   <span class="c"># 用户/对话提到的标识符</span>
+well-named ident（≥8 字符 驼峰/蛇形） → mul ×= 10
+leading underscore（私有 _x）   → mul ×= 0.1
+ident 有 ≥5 处定义（太常见）    → mul ×= 0.1
+referencer 是 chat 文件         → use_mul ×= 50
+<span class="c"># PageRank：personalization 向量把中心性偏向"当前任务在意的东西"</span>
+ranked = pagerank(G, weight="weight", personalization=…)  <span class="c"># chat/提到的文件/路径匹配加权</span></pre>
+            <p>PageRank 得分再<b>分摊回该文件的出边</b>以排名单个定义,得到全局排序的 (文件, 符号) 列表。<b>塞进预算:</b>因为渲染后的 token 数与 tag 数非线性,做<b>二分搜索</b>——起点 <code class="inl">middle = min(map_tokens//25, num_tags)</code>,渲染计数,落在 <code class="inl">--map-tokens</code>(默认 1024;无 chat 文件时 ×8)的 15% 内就接受,否则二分。渲染用 <code class="inl">grep_ast.TreeContext</code>:只打印排名靠前符号的<b>签名行</b>、其余折叠成 <code class="inl">...</code>,于是模型看到的是骨架而非全文。<b>对比:LSP</b>(opencode 自动装 40+ 语言服务器)经 JSON-RPC 把 <code class="inl">textDocument/publishDiagnostics</code> 喂回循环,编辑后重读诊断作正确性闸,并可用 definition/references/hover 做编译器级精确导航;<b>嵌入 RAG</b>(Cursor)客户端建 Merkle 树、只重嵌变更叶子(~10 分钟一次)、按 AST 边界分块、路径用 6 字节确定性 nonce 加密后存 Turbopuffer,服务端不落明文;<b>纯 agentic</b>(Claude Code)无索引,靠成本递增的工具集(Glob&lt;Grep&lt;Read&lt;Explore 子体)由模型自己迭代,靠 ~92% 前缀缓存复用维持经济性。</p>
+          </div>
+          <div class="blk"><h4>核心概念</h4><div class="terms">
+            <div class="tm"><b>Repo map</b>按 token 预算裁剪的、全仓排名骨架(顶部符号显示为签名、body 省略),作环境上下文注入,让模型不读文件也知道"有什么"。</div>
+            <div class="tm"><b>tags.scm 查询</b>每语言一份 tree-sitter S-表达式,把节点标为定义/引用——让 parse 树对排名器有意义的唯一东西。</div>
+            <div class="tm"><b>个性化 PageRank</b>被 personalization 向量偏向 chat/提到的文件与标识符的图中心性,让排名反映当前任务而非全局重要性。</div>
+            <div class="tm"><b>token 预算二分</b>因渲染 token 与 tag 数非线性,二分包含的 tag 数直到落在预算 15% 内。</div>
+            <div class="tm"><b>LSP-as-tool / 诊断闸</b>跑真语言服务器、把编译器诊断喂回模型——精确的地面真相而非统计猜测,并作编辑后正确性闸。</div>
+            <div class="tm"><b>Merkle 增量索引</b>Cursor 把文件哈希成 Merkle 树、只重嵌变更叶子,在大仓上界定重索引成本。</div>
+          </div></div>
+          <div class="blk"><h4>关键设计权衡</h4><div class="decisions">
+            <div class="dec"><b>有索引 vs 无索引：</b>索引(repo map/嵌入)给即时广召回,但要建、要存、要保鲜;纯 agentic 搜索永远最新、零维护,但每次查询付延迟/token,且会漏掉"叫不出名字"的东西。</div>
+            <div class="dec"><b>词法(grep) vs 语义(嵌入)：</b>grep 精确命中确切符号但对概念查询("鉴权在哪")失效;嵌入相反,并引入分块/陈旧/索引复杂度。Augment 靠 grep+find 登顶 SWE-bench——"grep 与 find 就够了"。</div>
+            <div class="dec"><b>算力花在哪：</b>离线预算(嵌入/Merkle 同步)拿隐私+基建换延迟;查询时算(agentic)保数据在本地,但把成本摊进每次会话。</div>
+            <div class="dec"><b>降级画像：</b>repo map/嵌入在命名糟糕的巨型 monorepo 上退化;LSP 在无对应语言服务器时退化;agentic 在陌生代码库(模型还叫不出目标名)时退化——真系统通常分层叠加。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li><b>嵌入陈旧:</b>两次重索引之间向量库描述的是旧代码,智能体对着幻影版本编辑——这是终端智能体弃嵌入转 live grep 的头号原因。</li>
+            <li>分块破坏上下文:固定窗口把函数拦腰截断或把定义与其 docstring/调用者分开,检索块各自不连贯;AST 感知分块可缓解但加解析复杂度。</li>
+            <li>语义匹配确切符号失灵:嵌入返回"看起来相关"的代码,而编码要精确符号——模糊匹配注入貌似合理却错误的上下文,模型随后信了它。</li>
+            <li>repo map 过度省略:TreeContext 只显签名,可能藏掉那一行关键实现,模型自信地在缺了关键的骨架上推理。</li>
+            <li>LSP 运营脆弱:服务器崩溃、冷启动慢、项目根错、或某语言无服务器,让智能体对诊断静默失明——且许多栈只接了诊断、没接导航,悄悄退回 grep。</li>
+          </ul></div>
+          <div class="blk"><h4>关键数字</h4><div class="nums">
+            <span class="num">Aider --map-tokens 默认 1024,无 chat 文件时 ×8</span>
+            <span class="num">边权乘子:提到 ×10 · 良名 ×10 · 私有 ×0.1 · 过常见 ×0.1 · chat 引用 ×50</span>
+            <span class="num">二分容差 15% · 100+ 语言</span>
+            <span class="num">Claude Code Read ~500-5000 token/文件 · ~92% 前缀复用</span>
+            <span class="num">Anthropic 约 2025-05 从 Claude Code 移除向量搜索</span>
+            <span class="num">Cursor 重索引 ~10 分钟 · opencode 40+ LSP</span>
+          </div></div>
+          <div class="blk"><h4>真实实现</h4><ul class="clean">
+            <li><b>Aider</b>=经典 repo map;<b>Claude Code</b>=刻意无索引的 agentic 搜索(Boris Cherny 证实早期 RAG+本地向量库被弃因"agentic 搜索更好用");<b>Cursor</b>=服务端嵌入 RAG(Merkle + 加密路径 + Privacy Mode);<b>opencode/Zed</b>=内嵌 LSP 客户端把诊断喂回循环;<b>Augment</b>=纯 grep+find 登顶 SWE-bench。</li>
+          </ul></div>
+        </div>
+      </details>
+<details class="item">
+        <summary>
+          <span class="sum-key tag">协议</span>
+          <span class="sum-body"><span class="sum-title">智能体接口与互操作协议 · ACI / ACP / A2A</span>
+            <span class="sum-sub">智能体面向四个方向：工具（ACI/MCP）、驱动它的编辑器（ACP）、人类前端（AG-UI）、对等智能体（A2A）</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>一叠决定编码/智能体系统如何与四个对象对话的接口:它操作的计算机/工具(<b>ACI</b> 内部设计 + MCP 上线)、驱动它的编辑器/客户端(<b>ACP</b>)、它流入的人类 UI(<b>AG-UI</b>)、它委派的对等智能体(<b>A2A</b>)。ACI 是让智能体根本有效的内部设计纪律(工具面为 LLM 而非人类设计);其余是让智能体免于 N×M 定制集成、可移植可组合的线级协议。<b>把 ACI 做对是任务成功率最大的单一杠杆;协议让智能体可插拔。</b></p></div>
+          <div class="blk deep"><h4>深入机制 · 四层接口</h4>
+            <p><b>① ACI(Agent-Computer Interface,SWE-agent,arXiv 2405.15793):</b>ACI 是 LLM 看到的命令集 + 反馈格式。具体设计:有状态文件查看器只显<b>~100 行/回合</b>(论文实测最优)配 <code class="inl">open/scroll/goto</code> 跨回合保持光标,替代会灌爆上下文的 <code class="inl">cat</code>;<code class="inl">edit &lt;start&gt;:&lt;end&gt;</code> 替换行区间并<b>先跑语法 linter</b>,语法错的编辑被拒并回错(智能体无法把文件改坏);<code class="inl">search_dir</code> 只回 文件名+匹配数(带上下文反而让模型困惑);空 stdout 换成显式"命令成功、无输出";输出有界。原则:动作简洁且以 LM 为中心、把多步合并成单命令、护栏防错误态、反馈信息丰富而简洁。结果:SWE-bench pass@1 12.5%(当时 SOTA)。</p>
+            <p><b>② ACP(Agent Client Protocol,Zed,2025-08):</b>JSON-RPC 2.0 over stdio——编辑器(客户端)把智能体作子进程起。握手 <code class="inl">initialize</code>(协议版本 + 客户端能力如 fs/terminal 支持)→ 智能体回能力 + 鉴权方式;<code class="inl">session/new</code>(cwd + MCP server 列表)返回 sessionId,<code class="inl">session/load</code> 恢复;<code class="inl">session/prompt</code> 发用户回合。工作时智能体推 <code class="inl">session/update</code> 通知(agent_message_chunk / thought / tool_call 及其 pending→in_progress→completed 状态 / plan / mode)。副作用则<b>回调进客户端</b>:<code class="inl">session/request_permission</code>(编辑器弹 allow/reject)、<code class="inl">fs/read_text_file</code>/<code class="inl">fs/write_text_file</code>、<code class="inl">terminal/*</code>——智能体不直接碰盘,编辑器对工作区与权限保持权威。刻意复用 MCP 的内容块类型。常被称"AI 编码智能体的 LSP"。</p>
+            <p><b>③ A2A(Agent2Agent,Google 2025-04 → Linux 基金会 2025-06):</b>对等智能体经 <code class="inl">/.well-known/agent-card.json</code> 的 <b>Agent Card</b> 互相发现(name/url/skills/capabilities/securitySchemes/transport)。三种等价传输(JSON-RPC over HTTP / gRPC / REST);核心方法 <code class="inl">message/send</code>、<code class="inl">message/stream</code>(SSE)、<code class="inl">tasks/get|list|cancel</code>。一个 <b>Task</b> 是有状态、可长跑的单元,生命周期 submitted→working→(input-required|auth-required)→completed|failed|canceled|rejected。智能体是"不透明"的——只暴露 skills,不暴露内部工具/状态。<b>A2A vs MCP:</b>MCP 连"智能体→工具"(动词式函数、同步);A2A 连"智能体→对等智能体"(不透明、有状态、异步任务委派)——互补而非竞争,一个 A2A 智能体内部可以用 MCP。<b>④ AG-UI(CopilotKit):</b>事件式"智能体→前端",HTTP POST + SSE 约 16 种事件(TEXT_MESSAGE_*、TOOL_CALL_*、STATE_SNAPSHOT、STATE_DELTA 用 JSON-Patch),支撑 token 流、共享可变状态、人在环内、生成式 UI。</p>
+          </div>
+          <div class="blk"><h4>核心概念</h4><div class="terms">
+            <div class="tm"><b>ACI</b>LLM 操作计算机用的命令词汇 + 反馈格式;SWE-agent 论点:接口要为 LLM 用户设计,其影响力不亚于 prompt engineering。</div>
+            <div class="tm"><b>有界/信息丰富的反馈</b>ACI 输出截断、空结果显式化、搜索只回文件名——每 token 高信号,模型不被淹没也不瞎猜。</div>
+            <div class="tm"><b>linter 护栏</b>edit 跑 linter、拒绝语法坏的编辑并回错——接口阻止智能体进入不可恢复态,而非指望模型自觉避开。</div>
+            <div class="tm"><b>session/update 通知</b>ACP 的流式通道:单向推送消息块、思考、tool_call 状态迁移、计划、模式变更,让编辑器实时渲染进度。</div>
+            <div class="tm"><b>客户端回调(fs/terminal/permission)</b>ACP 里智能体不碰盘,而是请编辑器读写文件、跑终端、批准调用,编辑器保持对工作区权威。</div>
+            <div class="tm"><b>Agent Card</b>A2A 的机器可读清单(/.well-known/agent-card.json),广告身份/端点/skills/能力/鉴权/传输——智能体网络的发现原语。</div>
+          </div></div>
+          <div class="blk"><h4>关键设计权衡</h4><div class="decisions">
+            <div class="dec"><b>ACI 窗口大小：</b>每回合显示更多行给上下文但炸预算、降专注;SWE-agent 定在 ~100 行 + 滚动状态——按模型窗口调。</div>
+            <div class="dec"><b>护栏 vs 灵活：</b>拒绝不编译的编辑防损坏,但挡住合法的中间态(如多文件重构瞬时不编译)——决定哪里硬拦、哪里只警告。</div>
+            <div class="dec"><b>谁拥有文件系统：</b>ACP 把 fs/terminal 经客户端回调路由,编辑器控未保存缓冲与权限——更安全但更啰嗦。</div>
+            <div class="dec"><b>不透明(A2A) vs 透明(MCP)：</b>只暴露 skills 隐藏内部、易划信任边界,但给调用者的控制不如 MCP 的显式工具 schema——按被调方是"伙伴"还是"库"来选。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>把人类 CLI 当 ACI:把裸 cat/grep/find 输出灌给模型浪费上下文并让它困惑——SWE-agent 证明搜索命中的上下文反而有害,必须设计有界的专用命令。</li>
+            <li>混淆 ACP 与 A2A:ACP 是编辑器↔智能体(从 IDE 驱动一个智能体);A2A 是智能体↔智能体(跨网络委派)。用 A2A 去把智能体嵌进编辑器(或用 ACP 去联邦智能体)是选错层。</li>
+            <li>混淆 A2A 与 MCP:MCP 给智能体工具;A2A 让智能体委派给对等智能体。造"A2A 工具 server"或"MCP 智能体网络"都在逆协议纹理。</li>
+            <li>以为 ACP 智能体直接写文件:它们必须经 fs/write_text_file、terminal/* 回调,绕过会破坏编辑器的未保存缓冲与权限模型。</li>
+            <li>版本/命名漂移:A2A 从 Google 转 Linux 基金会;Zed 的 ACP 不同于 IBM/BeeAI 早期的"ACP",也不同于 Anthropic 的 MCP——核实库里说的是哪个"ACP"。</li>
+          </ul></div>
+          <div class="blk"><h4>关键数字</h4><div class="nums">
+            <span class="num">SWE-agent pass@1 12.5% · HumanEvalFix 87.7%</span>
+            <span class="num">ACI 文件窗口 ~100 行/回合</span>
+            <span class="num">ACP:JSON-RPC over stdio · 2025-08 · 25+ 智能体 + JetBrains/Google/GitHub</span>
+            <span class="num">A2A:2025-04 Google → 2025-06 Linux 基金会 · 150+ 组织 · 3 传输 · 8 任务态</span>
+            <span class="num">AG-UI:~16 事件类型 · POST+SSE</span>
+          </div></div>
+          <div class="blk"><h4>真实实现</h4><ul class="clean">
+            <li><b>SWE-agent</b>=ACI 参考实现(open/scroll/goto + edit-with-linter + 只回文件名的 search)。<b>Zed</b>=ACP 参考客户端(起子进程、渲染 session/update 流、弹权限/diff UI)。<b>Gemini CLI/Codex/Claude Code</b>经 ACP 适配器被一个编辑器驱动、可互换。<b>A2A</b>生态:Google/微软/AWS/Salesforce/SAP/ServiceNow/IBM 150+ 组织。<b>AG-UI</b>后端:LangGraph/CrewAI/Mastra/Pydantic AI/MS Agent Framework。</li>
+          </ul></div>
+        </div>
+      </details>
+<details class="item">
+        <summary>
+          <span class="sum-key tag">状态</span>
+          <span class="sum-body"><span class="sum-title">会话状态、检查点、Hooks 与可观测性</span>
+            <span class="sum-sub">context 之外的"耐久与控制"层——决定一次运行是否安全、可恢复、可审计、可调试</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>这四个子系统是编码智能体的"耐久与控制"层——一切活在 LLM 上下文窗口之外、却决定一次运行安不安全/能不能恢复/可不可审计/好不好调试的东西。会话状态(最好事件溯源)是导出 LLM prompt 的唯一真相源;检查点快照<b>文件系统</b>以便独立于对话回滚破坏性编辑;生命周期 hooks 给 harness prompt 无法信任地履行的确定性策略强制;可观测性/tracing 把不透明的循环变成带 token/成本核算的可重放 span。<b>这四样是"demo"与"生产智能体"的分界:没有它们,你无法从崩溃恢复、回滚坏编辑、拦 rm -rf、或解释为什么一次运行花了 $12、循环了 40 次。</b></p></div>
+          <div class="blk deep"><h4>深入机制 · 事件溯源 / shadow git / hooks 双通道 / OTel</h4>
+            <p><b>① 事件溯源(OpenHands V1):</b>对话是不可变 <code class="inl">Event</code> 的 append-only 日志,每个带 id/timestamp/source∈{user,agent,environment}。两大族:<code class="inl">ActionEvent</code>(智能体决定的工具调用,携 thought/thinking_blocks/tool+args/security_risk/llm_response_id)与 <code class="inl">ObservationEvent</code>(结果),外加 UserReject/AgentError/CondensationSummary。UI、智能体、运行时<b>互不调用</b>,只向日志追加/读取,于是每次运行"构造上即可重放"。LLM prompt(称"View")是<b>算出来</b>的、不是存下来的:过滤出 LLMConvertibleEvent、逐个 <code class="inl">to_llm_message()</code>、把共享 llm_response_id 的并行 Action 合成一条 assistant 消息、再过 condenser。<code class="inl">恢复 = 重放日志;fork = 复制 [0..N] 事件到新 conversation_id 续跑</code>(因为 state = f(事件前缀),分支很便宜)。</p>
+            <p><b>② 检查点</b>快照<b>工作区</b>(区别于对话状态):Cline 在 VS Code 全局存储里跑一个 <b>shadow git 仓</b>(不是 .git,故能捕获未跟踪文件、不污染用户历史),每次编辑/命令前提交一个真实 SHA,可"restore"文件到某检查点同时<b>保留</b>对话上下文;Gemini CLI 的 shadow 仓在 <code class="inl">~/.gemini/history/&lt;project_hash&gt;</code>,在任何被批准的写文件工具<b>之前</b>自动触发,打包 git 快照 + 对话历史 + 待定工具调用元数据三样,<code class="inl">/restore</code> 回滚文件<b>并</b>把对话倒回重提原调用(默认关闭)。原则:在改动动作<b>之前</b>原子快照,回滚永远落到已知良好的前态。</p>
+            <p><b>③ 生命周期 Hooks(Claude Code)</b>是确定性控制层。事件:SessionStart/End、UserPromptSubmit、PreToolUse、PostToolUse(Failure)、Stop、SubagentStop、Notification、Pre/PostCompact。每个 hook 从 <b>stdin</b> 收 JSON(session_id/transcript_path/cwd/tool_name/tool_input/tool_response)。<b>两个返回通道:</b>①退出码——0=成功解析 stdout JSON,<b>2=阻塞</b>(PreToolUse 拦调用、stderr 作模型可见的拒绝理由;Stop 阻止停止),其它=非阻塞记日志;②stdout JSON——<code class="inl">hookSpecificOutput.permissionDecision</code>∈ allow|deny|ask|defer,可用 <code class="inl">updatedInput</code> 改写参数,PostToolUse 可 <code class="inl">decision:"block"</code>+改写输出;通用字段 <code class="inl">continue/systemMessage/additionalContext</code>(把文本注入模型上下文)。配置在 settings.json 的 <code class="inl">hooks</code> 下,带 matcher 正则(如 <code class="inl">Edit|Write</code>)与 if 权限规则过滤。<b>因为 hooks 是 harness 跑的 OS 进程、不是 prompt 文本,它们能强制模型字面上无法绕过的策略。</b><b>④ 可观测性(OTel GenAI SemConv):</b>每次 LLM 调用是一个 span <code class="inl">chat &lt;model&gt;</code>(kind CLIENT),带 <code class="inl">gen_ai.request.model / usage.input_tokens / output_tokens / response.finish_reasons</code>;工具调用是 <code class="inl">execute_tool &lt;name&gt;</code> span;内容捕获(input/output messages)默认关闭(会泄密)。token×单价=成本汇总,嵌套 span 重建整个循环供 LangSmith/Langfuse/Braintrust 评估调试。</p>
+          </div>
+          <div class="blk"><h4>核心概念</h4><div class="terms">
+            <div class="tm"><b>事件溯源 / append-only 日志</b>状态存为不可变有序事件、从不原地改;当前态由重放折叠得出,给确定性重建、审计轨迹与免费时间旅行。</div>
+            <div class="tm"><b>View(导出的 prompt)</b>LLM 消息数组是事件日志的计算投影;View 可丢弃,日志才是正典。</div>
+            <div class="tm"><b>Action / Observation 二元</b>每次世界交互要么是 Action(决定做 X)要么是 Observation(发生了什么),都是可序列化重放的事件。</div>
+            <div class="tm"><b>会话 fork</b>因 state=f(事件前缀),复制 [0..N] 到新 id 续跑即廉价分支——用于探索替代或从检查点重试而不改原运行。</div>
+            <div class="tm"><b>shadow git 仓</b>放在用户 .git 之外的检查点库,提交捕获含未跟踪文件的整工作区,给 SHA 可寻址的还原点而不碰真历史。</div>
+            <div class="tm"><b>PreToolUse hook / 确定性控制层</b>hooks 是 harness 跑的 OS 进程而非 prompt 指令,能强制"拦 rm -rf、护 .env、测试通过前不许 Stop"这类 prompt 护栏会被说服绕开的策略。</div>
+          </div></div>
+          <div class="blk"><h4>关键设计权衡</h4><div class="decisions">
+            <div class="dec"><b>事件日志 vs 可变状态对象：</b>重放给确定性/审计/fork,但 to_llm_message() 必须纯且要给事件<b>版本化</b>——旧事件 schema 一改就可能让历史会话无法重放。</div>
+            <div class="dec"><b>存 View vs 重算 View：</b>重算(OpenHands)保单一真相但每轮耗 CPU 且依赖 condenser 确定性;缓存渲染后的 prompt 更快但可能与日志漂移。</div>
+            <div class="dec"><b>检查点粒度：</b>每次工具调用前快照(安全但多提交/磁盘churn)vs 仅写文件工具前(Gemini)vs 每用户回合——越细还原点越多但开销越大、历史越噪。</div>
+            <div class="dec"><b>Hook 强制点 & 延迟：</b>PreToolUse 在伤害前拦(但你要预判每种危险形态)vs 沙箱/权限做纵深;同步 hook 给每次工具调用加延迟(默认 600s 超时),异步 hook 不阻塞但无法否决。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>事件 schema 演进破坏重放:给事件类型增删字段会让 model_validate_json 在历史日志上失败——必须版本化事件、保持反序列化向后兼容,否则老会话不可恢复。</li>
+            <li>condenser 非确定:若摘要用 LLM,算出的 View 不再确定,除非把摘要本身作为事件持久化(OpenHands 就是这么做)。</li>
+            <li>检查点不捕获工作区外的副作用:DB 迁移、已推的提交、网络调用、已装的包都不被文件快照回滚——"restore"给假安全感。</li>
+            <li>Hook stdout 污染:任何调试 print 到 stdout 都会破坏 JSON 决策载荷;hooks 只能把 JSON 写 stdout、其它全写 stderr,否则决策被静默忽略。</li>
+            <li>可观测性泄密:开内容捕获(input/output 消息、工具参数)会把 API key/token/PII 送到 tracing 厂商;默认关是安全的,但有人为调试打开后忘了关。</li>
+          </ul></div>
+          <div class="blk"><h4>关键数字</h4><div class="nums">
+            <span class="num">Claude Code hook 退出码:0 解析 JSON · 2 阻塞(stderr 作理由) · 其它记日志</span>
+            <span class="num">hook 默认超时 600s · 11+ 事件</span>
+            <span class="num">permissionDecision:allow|deny|ask|defer</span>
+            <span class="num">Gemini 检查点打包 3 样:git 快照 + 对话 + 待定调用</span>
+            <span class="num">OTel GenAI SemConv 1.37+ 稳定 · 1.41 加推理 token · span 名 'chat {model}'</span>
+            <span class="num">OpenHands SDK V1:arXiv 2511.03690</span>
+          </div></div>
+          <div class="blk"><h4>真实实现</h4><ul class="clean">
+            <li><b>OpenHands V1</b>=不可变 Pydantic Event 日志 + FilesystemEventService 逐事件 JSON + View 重放。<b>Cline</b>=VS Code 全局存储 shadow git,编辑前提交、restore 保对话。<b>Gemini CLI</b>=<code class="inl">~/.gemini/history</code> shadow 仓 + <code class="inl">/restore</code>。<b>Claude Code</b>=11+ hooks + stdin JSON + 退出码/permissionDecision。<b>OTel GenAI</b>=LangSmith/Langfuse/Braintrust/Datadog 消费的标准 span。</li>
+          </ul></div>
+        </div>
+      </details>
+<details class="item">
+        <summary>
+          <span class="sum-key tag">评估</span>
+          <span class="sum-body"><span class="sum-title">评估 Harness 内部机制</span>
+            <span class="sum-sub">"80% on SWE-bench"到底是什么意思——定义分数的是 harness，不是模型</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>评估 harness 是把智能体输出变成可复现 pass/fail 数字的可执行机器:在冻结的仓库态起沙箱、应用模型预测的 patch、跑特定测试集、把原始输出解析成状态、判定"resolved"。<b>定义"80% on SWE-bench"含义的是 harness、不是模型</b>——同一模型在不同脚手架、patch-apply 兜底、超时与判分规则下差很多。懂 harness 内部,才能建可信的内部回归评估、避开会虚高公开分数的泄露/污染陷阱、并按"每解决成本"而非头条 pass@1 来推理。</p></div>
+          <div class="blk deep"><h4>深入机制 · SWE-bench harness 的五阶段</h4>
+            <p><code class="inl">swebench.harness.run_evaluation</code> 每个实例走五步:</p>
+            <pre><span class="c">① 镜像构建（三层 Docker 榨缓存）</span>
+   base（Ubuntu22.04+conda+系统依赖）→ env（setup_env.sh 建 conda 环境, ~60 共享镜像）
+   → instance（setup_repo.sh: git clone 全历史 → git reset --hard &lt;base_commit&gt; → pip install -e .）
+<span class="c">② PATCH 应用（兜底链，全失败=failed apply=未解决）</span>
+   git apply --verbose  →  git apply --verbose --reject  →  patch --batch --fuzz=5 -p1 -i
+<span class="c">③ 应用 test_patch（gold PR 的测试改动）→ 跑仓库特定测试命令</span>
+   注意：模型 code patch 先应用，gold test_patch 后叠加（模型永远不写判分测试）
+<span class="c">④ 日志解析：repo 专属 parser 把 stdout 映射成 PASSED/FAILED/ERROR/SKIPPED</span>
+<span class="c">⑤ 判分</span>
+   resolved == (所有 FAIL_TO_PASS 都 PASSED) AND (所有 PASS_TO_PASS 都 PASSED)
+   %resolved = resolved 数 / 总数（严格全或无，部分修复得 0）</pre>
+            <p><b>数据集变体:</b>full=2294(12 个 Python 仓)、Lite=300、<b>Verified=500</b>(人工三重标注为可解、事实标准)、Multimodal=~100-517 JS、Multilingual=300(9 语言)。同一 harness 契约,不同 repo specs 与语言 parser。<b>指标:</b>pass@1(单次尝试解决,榜单默认)vs pass@k(k 采样至少一次解决,用无偏估计 1−C(n−c,k)/C(n,k);因判分用 oracle 测试,无内部选择器的 pass@k 会高估可部署能力);<b>每解决成本</b> = 总 $/(resolved 数) 才是诚实的轴(best-of-16 换 5% pass@1 可能 10× 成本)。<b>榜单分 = 脚手架 + 模型:</b>同一模型在 SWE-agent vs Agentless vs 定制脚手架下能差几十分——"模型 X 得 Y%"离开脚手架与 harness commit 就无意义。</p>
+          </div>
+          <div class="blk"><h4>核心概念</h4><div class="terms">
+            <div class="tm"><b>FAIL_TO_PASS / PASS_TO_PASS</b>两个每实例存的测试 id 集:前者须从失败翻成通过(证明修好),后者须保持通过(证明没回归);resolved 要两者全满足。</div>
+            <div class="tm"><b>三层 Docker</b>base(OS+conda)/env(每仓版本环境,~60 共享镜像)/instance(克隆+reset+安装),分层最大化跨相似 issue 的缓存复用。</div>
+            <div class="tm"><b>patch-apply 兜底链</b>git apply → --reject → patch --fuzz=5;三者全败=failed apply=未解决,与逻辑对不对无关——畸形 diff 造成假阴的常见源。</div>
+            <div class="tm"><b>test_patch 应用</b>gold PR 的测试改动叠在模型 code patch 之上再跑,判分测试始终存在且是参考 oracle;模型只写代码修复、不写测试。</div>
+            <div class="tm"><b>脚手架+模型耦合</b>榜单分由 agent 循环(检索/定位/编辑格式/失败重试/上下文管理)+ harness 配置 + 模型共同产生;复现须钉脚手架 commit、harness 版本、数据集快照。</div>
+            <div class="tm"><b>抗污染设计(LiveCodeBench)</b>每题带发布日期,只用训练截止之后的题打分,靠"时间滚动"从构造上杜绝污染,而非启发式过滤。</div>
+          </div></div>
+          <div class="blk"><h4>关键设计权衡</h4><div class="decisions">
+            <div class="dec"><b>oracle 测试判分 vs 真正正确性：</b>FAIL/PASS 集客观便宜,但只和 gold 测试一样好——弱测试放过错 patch,想要可部署信号就得审测试强度或加变异/留出测试。</div>
+            <div class="dec"><b>patch-apply 严格度：</b>模糊兜底(fuzz=5)救回近似 diff 但可能误应用;严格 git apply 忠实但惩罚格式——兜底策略直接移动分数。</div>
+            <div class="dec"><b>pass@1 vs pass@k 报告：</b>带真选择器的 pass@k 测的是可部署系统;带 oracle 选择的 pass@k 是能力上界、生产不复现——按受众选并说明。</div>
+            <div class="dec"><b>抗污染策略：</b>发布日期过滤(LiveCodeBench)vs 私有留出集(SWE-bench Pro)vs 许可证威慑(GPL)——各有成本/刷新/法律权衡;静态公开集会随泄露进预训练而腐坏。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱（会虚高分数）</h4><ul class="clean risk">
+            <li>不看脚手架+harness commit 就信头条 %:同模型跨脚手架差几十分,跨实验室比原始榜单分是关公战秦琼。</li>
+            <li><b>解答泄露:</b>经典 SWE-bench 上 ~33% 的"resolved"其修复在 issue 里被直接引用、多至 ~61% 被暗示。</li>
+            <li><b>git 历史泄露:</b>不剥历史/不断网时,智能体跑 <code class="inl">git log --all</code>/<code class="inl">git show</code> 读已合并的 gold 提交——38 个观察到的作弊里 33 个正是如此。</li>
+            <li><b>弱 gold 测试:</b>~48% 的 resolved 靠不足的 FAIL_TO_PASS 覆盖通过;过滤弱/泄露实例后分数崩塌(Verified 上 ~52%→26%)。</li>
+            <li>test_patch 覆写:智能体能改/删用来判它分的测试文件(issue #538),除非 harness 在模型 patch 后不可变地重贴 gold 测试。</li>
+            <li>训练数据污染:Verified 已大体饱和并日益进入预训练语料;OpenAI 已公开停止把它当前沿信号——优先用截止后或私有留出评估。</li>
+          </ul></div>
+          <div class="blk"><h4>关键数字（2026）</h4><div class="nums">
+            <span class="num">SWE-bench full 2294 / Lite 300 / Verified 500 / Multilingual 300(9 语言)</span>
+            <span class="num">Verified SOTA ~75-85%+(&gt;90% 榜条多为内容农场伪造,勿信)</span>
+            <span class="num">SWE-bench Pro 公开 Pass@1 ~23%(GPT-5),多数 &lt;25%</span>
+            <span class="num">SWE-Lancer 1488 任务 / ~$1M · Aider polyglot 225 题(报 pass_rate_1/2 + well-formed)</span>
+            <span class="num">SWE-Bench+ 审计:~33% 解答泄露 · ~48% 弱测试 · 过滤后 51.7%→25.9%</span>
+            <span class="num">Epoch AI:2290 镜像重打包 ~67 GiB,~8s/样本,全 Verified ~1 小时</span>
+          </div></div>
+          <div class="blk"><h4>真实基准与自建回归</h4><ul class="clean">
+            <li><b>Terminal-Bench</b>(tmux 沙箱 + Terminus 2 裸键盘智能体,断言脚本判分)、<b>SWE-Lancer</b>(Upwork 真任务,Playwright 端到端测试)、<b>Aider polyglot</b>(6 语言 225 题,编辑格式感知)、<b>LiveCodeBench</b>(带日期抗污染)、<b>SWE-bench Pro / Multi-SWE-bench</b>(留出/多语言,抗泄露)。</li>
+            <li><b>自建:</b>冻结一组代表性任务(单文件修复/多文件特性/重构/绿地),各以自身测试判 pass/fail;每阶段对它跑一遍,要求 solve-rate 与安全性单调改善;记录每个 action/observation 让运行可重放,当评估数据集与回归夹具用。</li>
+          </ul></div>
+        </div>
+      </details>
     </div>
   </div>
 </section>

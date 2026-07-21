@@ -13,7 +13,8 @@
 | **核心心智** | 一切围绕的 agent loop（prompt → model → tool → observation → 循环），含循环骨架伪代码 |
 | **发展史** | 2023 → 2026 的 5 个时代与关键里程碑（AutoGPT → Devin/SWE-agent → Cline → Claude Code → MCP → Agent SDK） |
 | **框架全景** | 35 个主流框架分 4 类：终端 CLI · 编辑器 / IDE 集成 · 自主 SWE 智能体 · 构建用 SDK / 框架 |
-| **架构原理** | 6 大核心组件：Agent Loop · 工具系统 · 上下文与记忆 · 权限沙箱 · 规划分解 · Harness 工程（各含 MVP vs 成熟版对比） |
+| **架构原理** | 6 大核心组件：Agent Loop · 工具系统 · 上下文与记忆 · 权限沙箱 · 规划分解 · Harness 工程（各含**深入机制：线级协议与逐工具实现** + MVP vs 成熟版对比） |
+| **深入专题** | 6 个实现级(implementation-grade)深挖：MCP 协议内部 · Prompt 缓存与推理经济学 · 代码智能与检索（Aider PageRank / LSP / 嵌入 RAG） · 互操作协议（ACI / ACP / A2A） · 会话状态·检查点·Hooks·可观测性 · 评估 Harness 内部（SWE-bench 五阶段与泄露陷阱） |
 | **构建路线图** | Stage 0 → 8 分阶段构建路线，每阶段含目标 / 构建步骤 / 新增组件 / 验收标准 / 常见错误 |
 | **迭代与评估** | 10 条迭代优化原则 + 三轴评估法（正确性 / 成本延迟 / 安全） |
 
