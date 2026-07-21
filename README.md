@@ -19,6 +19,23 @@
 
 > ⚠️ 文档数据反映约 **2026 年年中** 的态势。版本号、SWE-bench 分数、估值、开源状态等具体数字变动较快，关键决策前请回到各项目官方来源二次确认。
 
+## 📖 调研文档 · 二
+
+[**《数字员工型 Agent：WorkBuddy · Cowork 类通用办公智能体全景与构建指南》**](./WorkBuddy类Agent调研.html)
+
+同款自包含、可交互的 HTML 页面（双击浏览器打开即可，纯本地、零外部依赖）。对标上一份「编码 agent」，这份聚焦**平行赛道**——能在 OS/浏览器层自主执行多步办公任务、接入企业系统、以自然语言驱动的「agentic coworker / 数字员工」：
+
+| 章节 | 内容 |
+| --- | --- |
+| **核心心智** | 「感知—推理—行动」闭环（截图 → VLM → 动作 → 观察），从「用电脑」到「指挥电脑」的范式跃迁 |
+| **发展史** | Chatbot → Copilot → Computer-use → Agentic coworker 四代演进（2022 → 2026），及编码线与办公线的分叉与合流 |
+| **产品全景** | 3 大阵营 20+ 产品：焦点双雄（WorkBuddy · Claude Cowork）· 海外玩家（OpenAI / Google / 微软 / Amazon / Sierra / Cognition / Manus）· 国内玩家（字节 / 阿里 / 飞书 / 智谱 / 月之暗面 / MiniMax / 百度 / 面壁） |
+| **架构原理** | 9 大组件：computer-use/OS 操控 · 浏览器 vs 桌面路径 · 连接器与 MCP · 技能生态 · 权限沙箱/HITL · 数字员工模型（脑手解耦）· 多 agent · 云端异步 · 上下文记忆（各含 MVP vs 成熟版） |
+| **构建路线图** | Stage 0 → 9 分阶段构建路线，含可复用开源选型（computer-use-demo / browser-use / OpenAdapt / MCP / Manus） |
+| **评估与风险** | 8 大 benchmark 现实成绩（长程办公仅 20–30%、Web 短任务 ~94%）+ 企业落地 4 指标 + 3 类失败模式与安全风险 |
+
+> 🔎 本文档在调研之外增设了 **对抗式事实核实**（约 87 条易变事实独立复核），已更正 SkillHub 规模与性质、WorkBuddy 定价口径、Manus 月活量级、Cowork GA 时点、benchmark 分数归属等十余处偏差；红色标记处为已知存疑项。
+
 ## 🎯 项目目标
 
 以这份调研为路线图，从最小可运行的 agent loop（Stage 0）出发，逐步加固为一个完整的编码智能体框架 —— 先让它跑，再让它变好。

@@ -1,0 +1,1163 @@
+<title>数字员工型 Agent：WorkBuddy · Cowork 类通用办公智能体全景与构建指南</title>
+<style>
+  :root{
+    --navy:#0C1B2A; --navy-2:#12263A; --ink:#14202B; --ink-soft:#33424F;
+    --paper:#EEF0F3; --surface:#FBFCFD; --surface-2:#F4F6F8;
+    --line:#D5DBE2; --line-soft:#E4E8ED; --muted:#5C6875; --muted-2:#7C8894;
+    --amber:#E8912A; --amber-deep:#C56E12; --amber-glow:#F5B458;
+    --ok:#2F9E44; --warn:#C77700; --danger:#D8412F;
+    --maxw:1120px; --read:70ch;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;
+    --mono:"SFMono-Regular","Cascadia Code","JetBrains Mono","Fira Code",ui-monospace,Consolas,"Liberation Mono",monospace;
+    --sh-1:0 1px 2px rgba(12,27,42,.06),0 2px 8px rgba(12,27,42,.05);
+    --sh-2:0 4px 14px rgba(12,27,42,.10),0 12px 36px rgba(12,27,42,.08);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:var(--amber-glow);color:var(--navy)}
+  a{color:var(--amber-deep);text-decoration:none}
+  a:hover{text-decoration:underline}
+  :focus-visible{outline:2.5px solid var(--amber);outline-offset:2px;border-radius:2px}
+  h1,h2,h3,h4{text-wrap:balance;line-height:1.2;margin:0}
+
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--amber-deep);font-weight:600}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  /* ---------- HERO ---------- */
+  .hero{background:var(--navy);color:#E9EEF3;position:relative;overflow:hidden;
+    border-bottom:1px solid #071320}
+  .hero::before{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+    background:
+      radial-gradient(900px 380px at 78% -8%,rgba(232,145,42,.16),transparent 60%),
+      radial-gradient(700px 320px at 8% 108%,rgba(232,145,42,.07),transparent 60%)}
+  .hero-grid-lines{position:absolute;inset:0;opacity:.16;pointer-events:none;
+    background-image:linear-gradient(rgba(150,180,210,.18) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(150,180,210,.18) 1px,transparent 1px);
+    background-size:44px 44px;
+    -webkit-mask-image:radial-gradient(circle at 50% 40%,#000,transparent 78%);
+    mask-image:radial-gradient(circle at 50% 40%,#000,transparent 78%)}
+  .hero .wrap{position:relative;padding-top:64px;padding-bottom:56px}
+  .hero-top{display:flex;justify-content:space-between;align-items:center;gap:16px;
+    color:#7f93a6;font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+    border-bottom:1px solid rgba(150,180,210,.16);padding-bottom:16px;margin-bottom:40px}
+  .hero-top .dot{color:var(--amber)}
+  .hero-layout{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+  @media (max-width:880px){.hero-layout{grid-template-columns:1fr;gap:36px}}
+  .hero h1{font-size:clamp(30px,5vw,50px);font-weight:800;letter-spacing:-.02em;color:#fff;margin:14px 0 0}
+  .hero h1 .amber{color:var(--amber-glow)}
+  .hero-lead{color:#B8C6D4;font-size:clamp(15px,1.6vw,18px);margin:22px 0 0;max-width:52ch}
+  .hero-lead b{color:#EbF1F6;font-weight:600}
+  .hero-stats{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:30px;
+    padding-top:24px;border-top:1px solid rgba(150,180,210,.16)}
+  .stat .n{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--amber-glow);
+    font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12.5px;color:#8ea1b3;letter-spacing:.02em}
+
+  /* loop diagram */
+  .loopwrap{display:flex;justify-content:center;align-items:center}
+  .loop{width:100%;max-width:430px;height:auto}
+  .loop .node rect{fill:rgba(15,32,49,.72);stroke:rgba(150,180,210,.35);stroke-width:1.2}
+  .loop .node.on rect{stroke:var(--amber);filter:drop-shadow(0 0 7px rgba(232,145,42,.55))}
+  .loop .node text{fill:#cdd8e3;font-family:var(--mono);font-weight:600}
+  .loop .node.on text{fill:var(--amber-glow)}
+  .loop .node .sub{fill:#7f93a6;font-family:var(--mono);font-weight:400}
+  .loop .edge{fill:none;stroke:rgba(150,180,210,.4);stroke-width:1.6}
+  .loop .edge.dash{stroke-dasharray:4 5}
+  .loop .pulse{fill:var(--amber)}
+  .loop .center{fill:#8ea1b3;font-family:var(--mono);letter-spacing:.14em}
+  .loop .exit{fill:var(--amber-glow);font-family:var(--mono);font-weight:600}
+
+  /* ---------- STICKY NAV ---------- */
+  nav.toc{position:sticky;top:0;z-index:40;background:rgba(238,240,243,.86);
+    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex;align-items:center;gap:4px;height:52px;overflow-x:auto;scrollbar-width:none}
+  nav.toc .wrap::-webkit-scrollbar{display:none}
+  nav.toc .brand{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--navy);
+    margin-right:14px;white-space:nowrap;letter-spacing:.02em}
+  nav.toc .brand .b{color:var(--amber-deep)}
+  nav.toc a{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:7px 11px;
+    border-radius:6px;white-space:nowrap;letter-spacing:.02em}
+  nav.toc a:hover{background:var(--surface-2);color:var(--ink);text-decoration:none}
+  nav.toc a.active{background:var(--navy);color:#fff}
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:68px 0}
+  section+section{border-top:1px solid var(--line)}
+  .sec-head{margin-bottom:36px}
+  .sec-head .kick{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .sec-head .idx{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--navy);
+    background:var(--amber);padding:3px 9px;border-radius:5px;letter-spacing:.05em}
+  .sec-head h2{font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.015em}
+  .sec-head p{color:var(--muted);max-width:var(--read);margin:14px 0 0;font-size:16.5px}
+  .prose{max-width:var(--read)}
+  .prose p{margin:0 0 16px}
+
+  /* code block */
+  pre{background:var(--navy);color:#d7e0ea;font-family:var(--mono);font-size:13px;line-height:1.7;
+    padding:20px 22px;border-radius:12px;overflow-x:auto;margin:20px 0;box-shadow:var(--sh-1)}
+  pre .c{color:#7f93a6} pre .k{color:var(--amber-glow)} pre .s{color:#8fd0a0}
+  code.inl{font-family:var(--mono);font-size:.9em;background:var(--surface-2);
+    border:1px solid var(--line);padding:1px 6px;border-radius:5px;color:var(--ink)}
+
+  /* generic card */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-1)}
+
+  /* stage comparison strip */
+  .stack{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 26px}
+  @media (max-width:760px){.stack{grid-template-columns:1fr 1fr}}
+  .stack .s{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:14px 15px;position:relative}
+  .stack .s .g{font-family:var(--mono);font-size:11px;color:var(--amber-deep);letter-spacing:.06em;font-weight:700}
+  .stack .s .h{font-size:15px;font-weight:750;margin:5px 0 6px}
+  .stack .s p{font-size:12.5px;color:var(--muted);margin:0;line-height:1.5}
+  .stack .s .yr{font-family:var(--mono);font-size:11px;color:var(--muted-2);margin-top:8px;display:block}
+
+  /* ---------- TIMELINE ---------- */
+  .eras{display:flex;flex-direction:column;gap:0}
+  .era{border-left:2px solid var(--line);padding:0 0 8px 26px;position:relative}
+  .era::before{content:"";position:absolute;left:-8px;top:4px;width:14px;height:14px;border-radius:50%;
+    background:var(--amber);border:3px solid var(--paper);box-shadow:0 0 0 1px var(--amber)}
+  .era-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:6px}
+  .era-head h3{font-size:19px;font-weight:750}
+  .era-span{font-family:var(--mono);font-size:12px;color:var(--navy);background:var(--surface-2);
+    border:1px solid var(--line);padding:2px 9px;border-radius:20px}
+  .era p{color:var(--ink-soft);max-width:var(--read);margin:0 0 18px;font-size:15px}
+  .milestones{display:flex;flex-direction:column;gap:12px;margin:0 0 26px}
+  .ms{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:start}
+  @media (max-width:560px){.ms{grid-template-columns:1fr;gap:2px}}
+  .ms .date{font-family:var(--mono);font-size:12.5px;color:var(--amber-deep);font-weight:600;
+    padding-top:1px;font-variant-numeric:tabular-nums}
+  .ms .m b{font-weight:700}
+  .ms .m span{color:var(--muted);font-size:14px}
+
+  /* ---------- TABS + PRODUCT CARDS ---------- */
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+  .tab{font-family:var(--mono);font-size:13px;border:1px solid var(--line);background:var(--surface);
+    color:var(--ink-soft);padding:9px 15px;border-radius:9px;cursor:pointer;letter-spacing:.01em;
+    display:flex;align-items:center;gap:8px;transition:border-color .15s,background .15s}
+  .tab .cnt{font-size:11px;color:var(--muted-2);background:var(--surface-2);border-radius:20px;padding:1px 7px}
+  .tab:hover{border-color:var(--amber)}
+  .tab[aria-selected="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .tab[aria-selected="true"] .cnt{background:rgba(255,255,255,.16);color:#dbe6f0}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+  .panel[hidden]{display:none}
+  .fw{padding:20px;display:flex;flex-direction:column;gap:12px;transition:transform .15s,box-shadow .15s}
+  .fw:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
+  .fw-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .fw-name{font-size:17px;font-weight:750;letter-spacing:-.01em}
+  .fw-vendor{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:3px}
+  .fw-badges{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+  .badge{font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:20px;white-space:nowrap;letter-spacing:.02em}
+  .badge.oss{background:#e5f4ea;color:#1c7a34;border:1px solid #bfe3c9}
+  .badge.closed{background:#fbe9e6;color:#b23524;border:1px solid #f2cabf}
+  .badge.partial{background:#fdf1df;color:#a06405;border:1px solid #f2ddb4}
+  .badge.year{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .fw-one{font-size:14px;color:var(--ink-soft);line-height:1.55}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:11.5px;font-family:var(--mono);background:var(--surface-2);border:1px solid var(--line);
+    color:var(--ink-soft);padding:3px 8px;border-radius:6px}
+  .fw-diff{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:11px}
+  .fw-diff b{color:var(--amber-deep);font-weight:600;font-family:var(--mono);font-size:11px;
+    letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:3px}
+
+  /* ---------- ACCORDION (architecture + roadmap) ---------- */
+  .acc{display:flex;flex-direction:column;gap:12px}
+  details.item{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--sh-1);overflow:hidden}
+  details.item[open]{box-shadow:var(--sh-2);border-color:var(--amber)}
+  details.item>summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;gap:16px;
+    align-items:flex-start}
+  details.item>summary::-webkit-details-marker{display:none}
+  .sum-key{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--navy);
+    background:var(--amber);min-width:34px;height:34px;border-radius:8px;display:flex;
+    align-items:center;justify-content:center;flex-shrink:0}
+  .sum-body{flex:1;min-width:0}
+  .sum-title{font-size:18px;font-weight:750;letter-spacing:-.01em}
+  .sum-sub{color:var(--muted);font-size:14px;margin-top:4px}
+  .sum-caret{color:var(--muted-2);font-family:var(--mono);font-size:18px;transition:transform .2s;line-height:1}
+  details.item[open] .sum-caret{transform:rotate(45deg)}
+  .item-detail{padding:0 22px 22px 22px;border-top:1px solid var(--line-soft);margin-top:2px}
+  .item-detail>*:first-child{margin-top:20px}
+  .blk{margin:0 0 20px}
+  .blk h4{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--amber-deep);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .blk h4::before{content:"";width:6px;height:6px;background:var(--amber);border-radius:50%}
+  .blk p{margin:0;color:var(--ink-soft);font-size:14.5px;max-width:var(--read)}
+  ul.clean{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+  ul.clean li{position:relative;padding-left:20px;color:var(--ink-soft);font-size:14px;max-width:78ch}
+  ul.clean li::before{content:"▸";position:absolute;left:0;color:var(--amber-deep);font-size:12px;top:1px}
+  ul.risk li::before{content:"✕";color:var(--danger);font-weight:700}
+  ul.ok li::before{content:"✓";color:var(--ok);font-weight:700}
+  .mvp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  @media (max-width:640px){.mvp{grid-template-columns:1fr}}
+  .mvp .box{border:1px solid var(--line);border-radius:11px;padding:15px 16px;background:var(--surface-2)}
+  .mvp .box.mature{background:#fdf6ec;border-color:#f0ddba}
+  .mvp .box .t{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    font-weight:700;margin-bottom:8px}
+  .mvp .box.mvp-b .t{color:var(--muted)} .mvp .box.mature .t{color:var(--amber-deep)}
+  .mvp .box p{font-size:13.5px;color:var(--ink-soft);margin:0}
+  .decisions{display:flex;flex-direction:column;gap:10px}
+  .dec{border-left:3px solid var(--amber);background:var(--surface-2);padding:10px 14px;border-radius:0 8px 8px 0;
+    font-size:13.5px;color:var(--ink-soft)}
+
+  /* roadmap specific */
+  .rm-goal{background:var(--navy);color:#dbe6f0;border-radius:11px;padding:14px 16px;font-size:14px;margin-bottom:18px}
+  .rm-goal b{color:var(--amber-glow)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media (max-width:700px){.two{grid-template-columns:1fr}}
+  .learn{background:#fdf6ec;border:1px solid #f0ddba;border-radius:11px;padding:14px 16px;
+    font-size:13.5px;color:#6b4a10;margin-bottom:18px}
+  .learn b{color:var(--amber-deep)}
+
+  /* principles / eval */
+  .princ{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .pr{padding:18px;display:flex;gap:13px;align-items:flex-start}
+  .pr .no{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber-deep);flex-shrink:0}
+  .pr p{margin:0;font-size:14px;color:var(--ink-soft)}
+  .pr p b{color:var(--ink);font-weight:700}
+  .eval{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:760px){.eval{grid-template-columns:1fr}}
+  .ev{padding:20px;border-top:3px solid var(--amber)}
+  .ev h4{font-size:16px;font-weight:750;margin-bottom:6px}
+  .ev .tag{font-family:var(--mono);font-size:11px;color:var(--amber-deep);letter-spacing:.06em}
+  .ev p{font-size:13.5px;color:var(--ink-soft);margin:10px 0 0}
+
+  /* benchmark table */
+  .btbl{width:100%;border-collapse:collapse;margin:6px 0 8px;font-size:13.5px;overflow:hidden;
+    border:1px solid var(--line);border-radius:12px}
+  .tblwrap{overflow-x:auto;border-radius:12px;box-shadow:var(--sh-1);margin:20px 0}
+  .btbl th,.btbl td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+  .btbl thead th{background:var(--navy);color:#dbe6f0;font-family:var(--mono);font-size:12px;
+    letter-spacing:.03em;font-weight:600}
+  .btbl tbody tr:nth-child(even){background:var(--surface-2)}
+  .btbl tbody td:first-child{font-weight:650;color:var(--ink)}
+  .btbl .num{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--amber-deep);font-weight:600}
+  .btbl .lo{color:var(--danger)} .btbl .hi{color:var(--ok)}
+  .callout{background:#fdf6ec;border:1px solid #f0ddba;border-left:4px solid var(--amber);
+    border-radius:0 10px 10px 0;padding:14px 18px;margin:22px 0;font-size:14px;color:#5c4410;max-width:82ch}
+  .callout b{color:var(--amber-deep)}
+  .note-flag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;
+    background:#fbe9e6;color:#b23524;border:1px solid #f2cabf;border-radius:5px;padding:0 6px;margin-left:4px}
+
+  /* footer */
+  footer{background:var(--navy);color:#9db0c2;padding:44px 0 52px;font-size:13px}
+  footer .wrap{display:flex;flex-direction:column;gap:14px}
+  footer h4{color:#fff;font-size:15px;font-family:var(--mono)}
+  footer .meta{display:flex;flex-wrap:wrap;gap:8px 22px;font-family:var(--mono);font-size:12px;color:#7f93a6}
+  footer .cav{max-width:80ch;color:#8ea1b3;line-height:1.6}
+  footer .cav b{color:#cdd8e3}
+</style>
+
+<div class="page">
+<header class="hero">
+  <div class="hero-grid-lines"></div>
+  <div class="wrap">
+    <div class="hero-top">
+      <span>AGENTIC&nbsp;COWORKER&nbsp;/&nbsp;数字员工 <span class="dot">◆</span> 深度调研</span>
+      <span>2022 → 2026</span>
+    </div>
+    <div class="hero-layout">
+      <div>
+        <div class="eyebrow">WorkBuddy · Cowork 类通用办公 Agent · 全景与构建指南</div>
+        <h1>让 AI 从副驾驶<span class="amber">坐进主驾驶</span>，替你把活干完</h1>
+        <p class="hero-lead">上一代 AI 是嵌在软件里「建议、补全」的 <b>Copilot</b>；这一代是能看屏幕、动鼠标、跨应用与企业系统自主执行、把成品交到你手上的 <b>数字同事</b>。腾讯 WorkBuddy 与 Anthropic Claude Cowork 是这条线的两个标志性产品。本页拆解这一品类：它的心智内核、四代演进、国内外产品全景、九层技术架构，以及如何从零把这样一个 agent 构建出来。</p>
+        <div class="hero-stats">
+          <div class="stat"><div class="n">20+</div><div class="l">主流产品 / 平台</div></div>
+          <div class="stat"><div class="n">9</div><div class="l">核心架构组件</div></div>
+          <div class="stat"><div class="n">10</div><div class="l">阶段构建路线</div></div>
+          <div class="stat"><div class="n">4</div><div class="l">演进世代</div></div>
+        </div>
+      </div>
+      <div class="loopwrap">
+        <svg class="loop" viewBox="0 0 430 340" role="img" aria-label="感知-推理-行动循环：截屏进入模型，模型输出动作，执行后再截图观察，无动作则交付/请示">
+          <path class="edge" id="e1" d="M126 78 H304"/>
+          <path class="edge" id="e2" d="M336 104 V150"/>
+          <path class="edge" id="e3" d="M304 196 H196"/>
+          <path class="edge dash" id="e4" d="M118 178 C74 172 74 118 110 96" />
+          <path class="pulse" d="M304 72 l12 6 -12 6 z"/>
+          <path class="pulse" d="M330 150 l6 12 6 -12 z"/>
+          <path class="pulse" d="M196 190 l-12 6 12 6 z"/>
+          <path class="pulse" d="M114 96 l-2 13 11 -6 z" opacity=".7"/>
+          <path class="edge" d="M336 178 h52"/>
+          <path class="pulse" d="M388 172 l12 6 -12 6 z"/>
+          <text class="exit" x="342" y="205" font-size="11">no action</text>
+          <text class="exit" x="352" y="219" font-size="12">→ 交付/请示</text>
+          <text class="center" x="215" y="150" text-anchor="middle" font-size="11">PERCEIVE·ACT</text>
+          <text class="center" x="215" y="166" text-anchor="middle" font-size="11">LOOP</text>
+          <g class="node on" data-i="0"><rect x="26" y="52" width="100" height="52" rx="9"/>
+            <text x="76" y="78" text-anchor="middle" font-size="12">PERCEIVE</text>
+            <text class="sub" x="76" y="93" text-anchor="middle" font-size="9.5">截屏·无障碍树</text></g>
+          <g class="node" data-i="1"><rect x="304" y="52" width="100" height="52" rx="9"/>
+            <text x="354" y="78" text-anchor="middle" font-size="12">MODEL·VLM</text>
+            <text class="sub" x="354" y="93" text-anchor="middle" font-size="9.5">推理·规划</text></g>
+          <g class="node" data-i="2"><rect x="304" y="150" width="100" height="52" rx="9"/>
+            <text x="354" y="176" text-anchor="middle" font-size="12">ACTION</text>
+            <text class="sub" x="354" y="191" text-anchor="middle" font-size="9.5">点击·输入·调API</text></g>
+          <g class="node" data-i="3"><rect x="96" y="150" width="100" height="52" rx="9"/>
+            <text x="146" y="176" text-anchor="middle" font-size="12">OBSERVE</text>
+            <text class="sub" x="146" y="191" text-anchor="middle" font-size="9.5">新截图回流</text></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="目录">
+  <div class="wrap">
+    <span class="brand">digital<span class="b">.worker</span></span>
+    <a href="#model" class="toclink">核心心智</a>
+    <a href="#history" class="toclink">发展史</a>
+    <a href="#landscape" class="toclink">产品全景</a>
+    <a href="#arch" class="toclink">架构原理</a>
+    <a href="#roadmap" class="toclink">构建路线图</a>
+    <a href="#eval" class="toclink">评估与风险</a>
+  </div>
+</nav>
+
+<section id="model">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">00</span><span class="eyebrow">先建立一个心智模型</span></div>
+      <h2>不是「更会聊」，而是「能动手」</h2>
+      <p>编码 agent 的内核是「读文件 / 改代码 / 跑测试」的工具循环；办公 coworker 的内核几乎相同，只是把工具换成了<b>整台电脑</b>——它像人一样截屏看界面、移动光标、敲键盘、跨软件操作，或在有 API 时直接调用连接器。理解这个「感知—推理—行动」闭环，后面的一切（浏览器/桌面操控、连接器、技能、权限、记忆、多智能体、云端异步）都只是给它做加固。</p>
+    </div>
+    <div class="prose">
+      <p><b>从「用电脑」到「指挥电脑」。</b>这是腾讯给 WorkBuddy 的官方叙事，也精准概括了整个品类的范式跃迁：Anthropic 给 Claude Cowork 的价值主张是「<b>描述一个结果，走开，回来时工作已经完成</b>」。二者共同点在于——用户不再逐步操作软件，而是把一个<b>结果目标</b>交给 agent，由它自主拆解、多步执行、必要时暂停向人请示，最后交付可直接使用的成品（报表、表格、PPT、审批、简报）。这就是「数字员工 / 数字同事」这个词的实质。</p>
+      <pre><span class="c"># 通用办公 agent 的内核——computer-use 感知-行动循环</span>
+state = [system_prompt, user_goal]
+<span class="k">while</span> True:
+    frame  = capture_screen()                       <span class="c"># 感知：截图（可叠加无障碍树/DOM）</span>
+    resp   = model.create(state + [frame],          <span class="c"># 多模态模型看屏幕，输出下一步</span>
+                          tools=[computer, bash, editor, mcp_tools])
+    state.append(resp)
+    actions = [b <span class="k">for</span> b <span class="k">in</span> resp <span class="k">if</span> b.type==<span class="s">"tool_use"</span>]
+    <span class="k">if</span> not actions: <span class="k">break</span>                          <span class="c"># ★ 无动作 = 任务完成 / 交回用户</span>
+    <span class="k">if</span> is_risky(actions):                           <span class="c"># ★ HITL 门：发送/付款/删除等需人批准</span>
+        <span class="k">await</span> human_approve(actions)
+    results = [execute(a) <span class="k">for</span> a <span class="k">in</span> actions]         <span class="c"># 点击 (x,y) / 输入 / 调 API</span>
+    state.append(observe(results))                  <span class="c"># 观察结果（新截图）回流</span>
+    <span class="k">if</span> steps >= max_steps <span class="k">or</span> over_budget: <span class="k">break</span>    <span class="c"># ★ 兜底：步数 / 预算 / 时钟</span></pre>
+      <p>三个贯穿全篇的关键事实：<b>①</b> 与编码 agent 一样，终止大多是隐式的——模型给出一轮「不再请求动作」的回复即代表完成；<b>②</b> 这一代产品的分水岭不是「聊天质量」，而是<b>能否可靠地把屏幕像素/DOM 映射成正确坐标动作、跑完几十上百步而不漂移、并在危险处停下等人</b>；<b>③</b> 真正把 agent 从玩具变成「数字员工」的门槛，是<b>接入企业系统（连接器/MCP）+ 权限治理 + 长时后台运行</b>——纯 demo 谁都能跑，能进营销/财务/人事/客服的真实流程才算数。</p>
+      <div class="callout"><b>坐标 grounding 是最硬的底层难题。</b>Anthropic 明确指出「训练 Claude 精确地数像素至关重要，否则模型给不出可用的鼠标指令」。纯视觉路线（看渲染像素、预测点击坐标）通用性强但一次浏览器任务可能烧掉约 5 万 vision token；而解析 DOM/无障碍树只需约 5000 text token 且更稳——成熟系统因此走「DOM/无障碍树优先、视觉兜底」的混合架构。</div>
+    </div>
+  </div>
+</section>
+
+<section id="history">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">01</span><span class="eyebrow">2022 → 2026 · 四代范式叠加</span></div>
+      <h2>从「会说」到「会做」，再到「替你上班」</h2>
+      <p>数字员工不是凭空出现的新物种，而是四代范式逐层叠加的结果。每一代都不取代上一代，而是在其上加一层能力。2024 年 computer-use 能力落地后，产品化立刻分成「编码 agent」与「办公 coworker」两条线，又在 2025 下半年开始互相渗透、合流。</p>
+    </div>
+
+    <div class="stack">
+      <div class="s"><span class="g">GEN 1</span><div class="h">Chatbot 对话</div><p>能理解与生成语言，但只能「说」——无工具、无记忆、无执行。</p><span class="yr">2022 末 · ChatGPT</span></div>
+      <div class="s"><span class="g">GEN 2</span><div class="h">Copilot 副驾驶</div><p>嵌入具体软件，在你的操作旁「建议、起草、补全」，人做每一步。</p><span class="yr">2023 · M365 Copilot</span></div>
+      <div class="s"><span class="g">GEN 3</span><div class="h">Computer-use 能操作</div><p>第一次能看屏幕、移光标、点击输入，直接操纵 GUI、跨软件执行。</p><span class="yr">2024Q4–2025 · Computer Use / Operator</span></div>
+      <div class="s"><span class="g">GEN 4</span><div class="h">Agentic coworker 数字同事</div><p>自主拆目标、接企业系统、后台长跑、交付成品、必要时请示。</p><span class="yr">2025H2–2026 · WorkBuddy / Cowork</span></div>
+    </div>
+
+    <div class="eras">
+
+      <div class="era">
+        <div class="era-head"><h3>Chatbot：会说话的大脑</h3><span class="era-span">2022 末 · 起点</span></div>
+        <p>ChatGPT 点燃全民认知，但它只是一个无状态、无工具、碰不到你文件的对话模型。与此同时，Adept 的 ACT-1 已在演示「用 Transformer 操作浏览器与软件」——为两年后的 computer-use 埋下种子。</p>
+        <div class="milestones">
+          <div class="ms"><div class="date">2022-09</div><div class="m"><b>Adept 发布 ACT-1（Action Transformer）</b> <span>——首次公开演示模型可按自然语言操作浏览器/软件，通用数字 agent 的最早雏形。</span></div></div>
+          <div class="ms"><div class="date">2022-11-30</div><div class="m"><b>OpenAI 发布 ChatGPT</b> <span>——5 天破百万用户，定义了「Chatbot」这一代，也让后续所有 agent 有了可用的底座模型。</span></div></div>
+        </div>
+      </div>
+
+      <div class="era">
+        <div class="era-head"><h3>Copilot：坐进软件的副驾驶</h3><span class="era-span">2023</span></div>
+        <p>微软把 GPT-4 嵌进 Office 全家桶，「Copilot」成为这一代的代名词——它在你身边建议、起草、补全，但人始终握着方向盘做每一步。同期 AutoGPT/BabyAGI 掀起「放它自己跑」的全自主热潮，验证了自主循环可行，却也暴露了脆弱与烧 token。</p>
+        <div class="milestones">
+          <div class="ms"><div class="date">2023-03-16</div><div class="m"><b>Microsoft 365 Copilot 公布</b> <span>——GPT-4 嵌入 Word/Excel/PPT/Teams/Outlook，2023-11-01 面向企业 GA（$30/人/月），确立 Copilot 范式。</span></div></div>
+          <div class="ms"><div class="date">2023-03</div><div class="m"><b>BabyAGI / AutoGPT 热潮</b> <span>——AutoGPT（3-30 发布）数周破 10 万 GitHub 星，普及「目标→规划→执行→重排」的自主循环想象，但落地脆弱。</span></div></div>
+        </div>
+      </div>
+
+      <div class="era">
+        <div class="era-head"><h3>Computer-use：让模型长出手和眼睛</h3><span class="era-span">2024Q4 → 2025</span></div>
+        <p>2024 年 10 月 Anthropic 首个把「操作屏幕」开放为主流产品能力，OpenAI 紧随其后。能力一落地，产品化立刻<b>分叉成两条线</b>：面向开发者、以 SWE-bench 为标尺的「编码 agent 线」（Devin/Claude Code/Codex），和面向白领、以「交付成品」为标尺的「办公 coworker 线」（Operator/Manus）。</p>
+        <div class="milestones">
+          <div class="ms"><div class="date">2024-03-12</div><div class="m"><b>Cognition 发布 Devin</b> <span>——「首个 AI 软件工程师」，SWE-bench 13.86%（前 SOTA 1.96%），编码 agent 线正式分叉。</span></div></div>
+          <div class="ms"><div class="date">2024-10-22</div><div class="m"><b>Anthropic 发布 Computer Use（beta）</b> <span>——随升级版 Claude 3.5 Sonnet 推出，首个主流厂商开放屏幕操作；SWE-bench Verified 33%→49%。<b>Computer-use 阶段起点</b>。</span></div></div>
+          <div class="ms"><div class="date">2024-10</div><div class="m"><b>Salesforce 发布 Agentforce</b> <span>——主打「企业数字劳动力」，把 autonomous agent 叙事带进 CRM（2025-10 升级 Agentforce 360）。</span></div></div>
+          <div class="ms"><div class="date">2025-01-23</div><div class="m"><b>OpenAI 发布 Operator</b> <span>——基于 CUA 模型的浏览器自主 agent，OSWorld 38.1% / WebVoyager 87%；办公 coworker 线的标志性产品。</span></div></div>
+          <div class="ms"><div class="date">2025-03-06</div><div class="m"><b>Manus 发布</b> <span>——中国蝴蝶效应团队，自称「全球首款通用型 AI Agent」，跑在云端虚拟机里，「通用智能体」概念出圈。</span></div></div>
+        </div>
+      </div>
+
+      <div class="era">
+        <div class="era-head"><h3>Agentic coworker：永不下班的数字同事</h3><span class="era-span">2025H2 → 2026</span></div>
+        <p>两条线开始合流，TechCrunch 称之为「编码 agent 的战争正溢出到办公室的其余部分」，竞争焦点从「谁聊得好」转向<b>「谁拥有工作真正发生的场所」</b>。前沿实验室把编码 agent 的血统复用给白领市场，中国厂商则以「本地执行 + 办公全家桶」切入并反向出海。Anthropic 对 120 万次 Cowork 会话的分析显示：<b>90%+ 用途并非编码</b>（业务流程操作 33.4%、内容创作 16.4%、软件开发仅 8.7%）——实证了 coworker 线已成主战场。</p>
+        <div class="milestones">
+          <div class="ms"><div class="date">2025-07-17</div><div class="m"><b>OpenAI 发布 ChatGPT Agent</b> <span>——融合 Operator（操作网页）+ Deep Research（综合）+ ChatGPT（对话），三条能力线合流的关键节点。</span></div></div>
+          <div class="ms"><div class="date">2026-01-12</div><div class="m"><b>Anthropic 发布 Claude Cowork（研究预览）</b> <span>——「Claude Code without the code」，桌面版（先 macOS）、仅限 Max 订阅；「数字同事」品类命名成型。</span></div></div>
+          <div class="ms"><div class="date">2026-03-09</div><div class="m"><b>腾讯 WorkBuddy 正式上线</b> <span>——CodeBuddy 团队出品，本地执行型办公 agent（2026-02-06 启动对外内测）；中国数字员工代表。</span></div></div>
+          <div class="ms"><div class="date">2026-06-05</div><div class="m"><b>腾讯 WorkBuddy 企业版 + Agent Suite 发布</b> <span>——北京腾讯云 AI 产业应用大会（新华网证实）；数字员工云端常驻 + Connector/MCP 接企业系统。6-11 SuperAI 2026 推出东南亚国际版。</span></div></div>
+          <div class="ms"><div class="date">2026-07-07</div><div class="m"><b>Claude Cowork 扩展至 Web + iOS/Android</b> <span>——会话云端远程执行，合上笔记本任务继续跑、跨设备接力；agentic coworker 走向「永不下班」。</span></div></div>
+          <div class="ms"><div class="date">2026-07-09</div><div class="m"><b>OpenAI 发布 ChatGPT Work</b> <span>——GPT-5.6 驱动的企业级 agent 平台，同时宣布 8-9 弃用独立 Atlas 浏览器、把浏览能力折叠回 ChatGPT/Codex。</span></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="landscape">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">02</span><span class="eyebrow">20+ 产品 · 3 大阵营</span></div>
+      <h2>产品全景：谁在做，能力如何，凭什么赢</h2>
+      <p>同一个「感知-行动」内核，被三股力量包装成不同形态：焦点双雄（WorkBuddy / Cowork）、海外大厂与独立玩家、国内大厂与模型公司。切换标签查看每一阵营；每张卡片给出定位、代表能力与差异化。<b>2026 年两个行业信号值得注意：</b>① 独立「agent 浏览器」退潮——OpenAI 弃 Atlas、Google 关 Mariner，浏览能力被折叠回主力助手；② 企业主战场转向「平台 + 治理 + 舰队管理」而非单点 agent。</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="产品阵营">
+      <button class="tab" role="tab" aria-selected="true" data-cat="focus">焦点双雄 <span class="cnt">2</span></button>
+      <button class="tab" role="tab" aria-selected="false" data-cat="global">海外玩家 <span class="cnt">7</span></button>
+      <button class="tab" role="tab" aria-selected="false" data-cat="china">国内玩家 <span class="cnt">8</span></button>
+    </div>
+
+    <div class="panel" data-cat="focus">
+      <div class="fgrid">
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">WorkBuddy</div><div class="fw-vendor">腾讯云（CodeBuddy 团队）</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2026-03</span></div></div>
+          <div class="fw-one">本地执行型 AI 办公数字员工：一句话下达，自主规划并操控本地文件/应用，做 PPT、写报告、整理数据、深度研究；7×24 后台待命。</div>
+          <div class="chips"><span class="chip">本地执行 + 云端数字员工</span><span class="chip">Connector / MCP / One ID</span><span class="chip">兼容 OpenClaw Skills</span><span class="chip">多 Agent 并行</span></div>
+          <div class="fw-diff"><b>差异化</b>深绑腾讯办公全家桶（文档/网盘/乐享/会议/企微）+ 微信支付生活链路；三种交付（公有云 SaaS / VPC 专享 / 私有化）；企业管理后台做权限/成本/审计；官方称 Agent Runtime 降 token 60%、成功率 +30%。已迭代 43 版、约每 2 天一更。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Claude Cowork</div><div class="fw-vendor">Anthropic</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2026-01</span></div></div>
+          <div class="fw-one">「Claude Code without the code」：面向非技术白领的行政型智能同事，跨文件/文件夹/应用自主执行，后台长跑、跨设备接力、危险处停下请示。</div>
+          <div class="chips"><span class="chip">建于 Claude Agent SDK</span><span class="chip">Manual/Auto/Skip 权限</span><span class="chip">云端异步 + 定时任务</span><span class="chip">Chrome + MCP 连接器</span></div>
+          <div class="fw-diff"><b>差异化</b>与 Claude Code 同一 agentic 架构、零终端零安装；三档权限模式（Manual 每步批准 / Auto 自动安全审查 / Skip）；连接器覆盖 Google Workspace/Slack/M365 等，Gmail 仅起草不自动发送；计划与 Claude 聊天统一入口。含于 Pro($20)/Max($100/$200)/Team/Enterprise。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-cat="global" hidden>
+      <div class="fgrid">
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">ChatGPT Work</div><div class="fw-vendor">OpenAI</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2026-07</span></div></div>
+          <div class="fw-one">GPT-5.6 驱动的企业级 agent 平台：agent「拥有工作流」、后台运行、跨团队共享，跨应用聚合上下文并交付成品级 sheets/slides/docs/web apps。</div>
+          <div class="chips"><span class="chip">workspace agents</span><span class="chip">内置 Codex 桌面 App</span><span class="chip">浏览折叠回主入口</span></div>
+          <div class="fw-diff"><b>差异化</b>产出「成品」而非草稿；2026-08-09 弃用独立 Atlas 浏览器、把 computer-use 收进 ChatGPT/Codex。Business 约 $20–25/人/月（2 席起），Enterprise 报价制约 $45–75/席/月。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Gemini Enterprise</div><div class="fw-vendor">Google（原 Vertex AI / Agentspace）</div></div>
+            <div class="fw-badges"><span class="badge closed">托管</span><span class="badge year">2026-04</span></div></div>
+          <div class="fw-one">统一的企业 Agent 平台（Vertex AI 的演进）：无代码 agent builder、200+ 模型（含第三方 Claude）、托管 MCP server、生产级 A2A 协议。</div>
+          <div class="chips"><span class="chip">Workspace Studio</span><span class="chip">A2A + MCP 开放协议</span><span class="chip">Box/Workday/Salesforce 预置 agent</span></div>
+          <div class="fw-diff"><b>差异化</b>全栈（Gemini 3 模型 + 云 + Workspace）+ 多模态领先 + 开放协议主打企业整合。独立浏览器 agent Project Mariner 已于 2026-05-04 关停、能力并入 Gemini。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Agent 365 / Copilot Studio</div><div class="fw-vendor">Microsoft</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2026</span></div></div>
+          <div class="fw-one">最全的「治理优先」栈：Copilot Studio 的 computer-using agents 已 GA（2026-05-13，可直接操作网站/桌面应用）；Agent 365 做企业 agent「舰队」治理。</div>
+          <div class="chips"><span class="chip">CUA GA（OpenAI+Claude 模型）</span><span class="chip">Agent 365 舰队治理</span><span class="chip">端侧 Phi-4-Silicon（NPU）</span></div>
+          <div class="fw-diff"><b>差异化</b>治理即门槛——整合 Entra/Purview/Defender 的策略；OS 级 + 端侧 SLM + 企业身份深度绑定。案例：KPMG 向 27.6 万人铺开 Agent 365。<span class="note-flag">Windows Agent Runtime 仍为开发者预览，GA 时点未证实</span></div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Nova Act / Quick</div><div class="fw-vendor">Amazon（AWS）</div></div>
+            <div class="fw-badges"><span class="badge closed">托管</span><span class="badge year">2026</span></div></div>
+          <div class="fw-one">Nova Act 已 GA：构建可靠 agent 舰队自动化生产级 UI 工作流（Web QA、数据录入、结账），宣称 &gt;90% 任务可靠性；Q Business 演进为 agentic teammate「Quick」。</div>
+          <div class="chips"><span class="chip">Amazon Nova 2 Lite 驱动</span><span class="chip">SDK / 开发者舰队</span><span class="chip">50+ 企业动作</span></div>
+          <div class="fw-diff"><b>差异化</b>以「可靠性 + SDK」切生产级 UI 自动化，与 AWS 云绑定。Q Business 自 2026-07-31 起不再对新客户开放，建议迁移到 Amazon Quick。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Sierra</div><div class="fw-vendor">Bret Taylor + Clay Bavor</div></div>
+            <div class="fw-badges"><span class="badge closed">企业 SaaS</span><span class="badge year">2023</span></div></div>
+          <div class="fw-one">企业客服 / CX 自主 agent（chat + voice），定位「生产化 BPO」替代人力客服，服务超 40% 的 Fortune 50。</div>
+          <div class="chips"><span class="chip">垂直客服 agent</span><span class="chip">语音 + 对话</span></div>
+          <div class="fw-diff"><b>差异化</b>专注单一高价值场景（客服）做深做透。2026-05 完成 $950M E 轮、估值 $15.8B、ARR 超 $1.5 亿——企业 agent 资本标杆。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Devin / Cognition</div><div class="fw-vendor">Cognition AI</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2024</span></div></div>
+          <div class="fw-one">「首个 AI 软件工程师」，严格属编码 agent（在本品类边缘），但资本与产品外溢意义大——正从编码向更广的知识工作扩展。</div>
+          <div class="chips"><span class="chip">自主软件工程</span><span class="chip">云端并行</span></div>
+          <div class="fw-diff"><b>差异化</b>编码 agent 的资本高峰：2026-05-27 融资超 $1B、投后估值 $26B（九个月翻倍），Devin ARR 达 $492M，客户含 Goldman Sachs、NASA、Mercedes-Benz。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Manus</div><div class="fw-vendor">蝴蝶效应 / Monica.im（新加坡·中国源）</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2025-03</span></div></div>
+          <div class="fw-one">多 Agent 架构的通用型 agent，跑在隔离虚拟机里（Chromium + 终端 + 文件读写），任务云端异步并行、离线可跑、完成推送。</div>
+          <div class="chips"><span class="chip">规划/执行/验证多 Agent</span><span class="chip">云沙箱异步</span><span class="chip">积分制计费</span></div>
+          <div class="fw-diff"><b>差异化</b>「通用 agent」范式样板。2025 年中迁总部新加坡、屏蔽中国 IP 退出国内（月活约 2000 万→1000 万）；Meta 拟约 $20 亿收购，2026-04-27 被中国发改委叫停并要求撤销——跨境 agent 并购监管标志案例。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-cat="china" hidden>
+      <div class="fgrid">
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">扣子 Coze 3.0 / 豆包</div><div class="fw-vendor">字节跳动</div></div>
+            <div class="fw-badges"><span class="badge partial">平台开源</span><span class="badge year">2026</span></div></div>
+          <div class="fw-one">Coze 3.0（2026-06）从 Bot 平台升级为多人多 Agent 协作平台，可接入 Claude Code/Codex CLI/OpenClaw；豆包 Windows 客户端含「办公任务」模式，操控文件/浏览器、批量办公自动化。</div>
+          <div class="chips"><span class="chip">Coze 平台 + 豆包入口</span><span class="chip">办公任务 Agent 模式</span><span class="chip">Coze Studio 开源 Apache 2.0</span></div>
+          <div class="fw-diff"><b>差异化</b>Coze 偏「Agent 工厂/开发平台」，豆包偏 C 端超级入口 + 桌面执行；办公自动化能力主要落在飞书 aily 与豆包客户端。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">夸克 AI 超级框 / QoderWork</div><div class="fw-vendor">阿里巴巴</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2025–26</span></div></div>
+          <div class="fw-one">夸克「AI 超级框」（2025-03，约 2 亿用户）把对话/深度思考/搜索/研究/深度执行整合进一个框；QoderWork（2026-03）为 Mac/Win 桌面 AI 助理，Qoder CN 系列另含 QoderWake CN 数字员工。</div>
+          <div class="chips"><span class="chip">深度执行</span><span class="chip">桌面 AI 助理</span><span class="chip">钉钉 AI 助理 10+ 角色</span></div>
+          <div class="fw-diff"><b>差异化</b>三入口并进（夸克超级框 C 端 / QoderWork 桌面 / 钉钉数字员工 B 端），底层通义模型；钉钉侧 AI 听记支持 120+ 语言实时转写。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">飞书 aily / 智能伙伴</div><div class="fw-vendor">飞书（字节）</div></div>
+            <div class="fw-badges"><span class="badge closed">企业 SaaS</span><span class="badge year">2026-03</span></div></div>
+          <div class="fw-one">企业级智能体开发平台 +「智能伙伴」，主打「为每个岗位配一个数字员工」，管理员统一搭建管控，能操作飞书文档/多维表格/任务等高频模块。</div>
+          <div class="chips"><span class="chip">岗位级数字员工</span><span class="chip">操作飞书云文档</span><span class="chip">知识空间联动</span></div>
+          <div class="fw-diff"><b>差异化</b>与办公系统深度耦合、贴近「真正 AI 工作伙伴」的代表；已在字节、海底捞、美宜佳等核心业务流落地。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">AutoGLM 2.0</div><div class="fw-vendor">智谱 AI</div></div>
+            <div class="fw-badges"><span class="badge partial">模型开源</span><span class="badge year">2025-08</span></div></div>
+          <div class="fw-one">国内 OS 操控标杆：由 GLM-4.5 + 视觉模型 GLM-4.5V 驱动，一句话操控抖音/小红书/美团/京东等 40+ App，完成点餐/订票/预约。</div>
+          <div class="chips"><span class="chip">专属云手机 + 云电脑 24h</span><span class="chip">GLM-OS 概念</span><span class="chip">API + 开发者生态</span></div>
+          <div class="fw-diff"><b>差异化</b>为 agent 配「专属云手机 + 云电脑」，24 小时后台自主执行不占本地设备，跨端协同。智谱 2026-01-08 港股上市（首日市值约 579 亿港元）。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">Kimi Work</div><div class="fw-vendor">月之暗面</div></div>
+            <div class="fw-badges"><span class="badge closed">Beta 内测</span><span class="badge year">2026-06</span></div></div>
+          <div class="fw-one">面向知识工作者的通用型本地 Agent：可安装技能、跑定时任务、驱动本地浏览器（WebBridge），拆解任务并行执行、交付文档/表格/PPT。</div>
+          <div class="chips"><span class="chip">本地 Agent</span><span class="chip">浏览器 WebBridge</span><span class="chip">定时任务</span></div>
+          <div class="fw-diff"><b>差异化</b>与 Kimi K3（超长上下文）绑定；2026 增量收入依赖 Coding 套餐 + Agent 方案。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">MiniMax M3</div><div class="fw-vendor">MiniMax（稀宇科技）</div></div>
+            <div class="fw-badges"><span class="badge partial">开源</span><span class="badge year">2026-06</span></div></div>
+          <div class="fw-one">原生多模态模型（2026-06-01 发布），在 agent 工具流中识别图像/视频、并具备操控电脑能力（OSWorld-Verified 约 70%）；定位「Coding + 1M 上下文 + 原生多模态」三合一。</div>
+          <div class="chips"><span class="chip">原生多模态</span><span class="chip">computer use ~70%</span><span class="chip">1M 上下文</span></div>
+          <div class="fw-diff"><b>差异化</b>以模型底座能力切入 agent，操控电脑是其 agentic 能力之一。2026-01-09 港股上市首日涨近 110%、市值超 1050 亿港元。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">心响 App</div><div class="fw-vendor">百度</div></div>
+            <div class="fw-badges"><span class="badge closed">闭源</span><span class="badge year">2025-04</span></div></div>
+          <div class="fw-one">通用超级智能体 App：多智能体协作的「AI 任务完成引擎 / AI 指挥官」，自然语言托管复杂任务全流程。</div>
+          <div class="chips"><span class="chip">多 Agent 编排</span><span class="chip">文心 5.0 + 千帆</span><span class="chip">AgentBuilder</span></div>
+          <div class="fw-diff"><b>差异化</b>路线偏「意图识别 + 任务编排 + 多 Agent」而非深度 OS 操控；文心大模型 5.0 于 2026-01-22 上线千帆平台。</div>
+        </div>
+        <div class="card fw">
+          <div class="fw-top"><div><div class="fw-name">AgentCPM-GUI / MiniCPM5</div><div class="fw-vendor">面壁智能</div></div>
+            <div class="fw-badges"><span class="badge oss">端侧开源</span><span class="badge year">2026</span></div></div>
+          <div class="fw-one">端侧数字员工路线：AgentCPM-GUI 做手机 GUI 操控，MiniCPM5-2B（WAIC 2026）在 AA 榜以 17 分登顶全球 4B 以下，512K 上下文、原生工具调用，作端侧智能体基座。</div>
+          <div class="chips"><span class="chip">端侧 GUI 操控</span><span class="chip">手机 / PC / 座舱</span><span class="chip">搭载三星旗舰</span></div>
+          <div class="fw-diff"><b>差异化</b>唯一明确押注端侧的一线玩家；2026 上半年累计融资超 50 亿元、估值破 200 亿元，国内端侧 AI 估值最高独角兽。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:22px"><b>横向判断：</b>真正做「OS/GUI 操控」的是智谱 AutoGLM（手机+云端最激进）、面壁 AgentCPM-GUI（端侧）、豆包桌面「办公任务」与 WorkBuddy（本地执行）；「数字员工 + 办公系统深度耦合」最实的是飞书 aily 与钉钉；夸克/心响偏「意图识别 + 多 Agent 编排」。计费趋势从席位制转向/叠加 token 或积分制；协议层 <b>A2A、MCP 已成跨 agent 互操作事实标准</b>。</div>
+  </div>
+</section>
+
+<section id="arch">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">03</span><span class="eyebrow">拆开外壳 · 9 大组件</span></div>
+      <h2>架构原理：数字员工是怎么「动手」的</h2>
+      <p>数字员工的本质是一个<b>感知—推理—行动闭环</b>，外挂工具、连接器、记忆与编排层。这九层大体互相独立，可逐个理解、逐个加固。每个组件都给出「是什么 / 怎么工作 / 关键抉择 / 常见陷阱 / MVP vs 成熟版」。点击展开。</p>
+    </div>
+    <div class="acc">
+
+      <details class="item" open>
+        <summary>
+          <span class="sum-key">01</span>
+          <span class="sum-body"><span class="sum-title">Computer-use / OS 操控</span>
+            <span class="sum-sub">截图 → VLM 理解 → 鼠标键盘动作 → 再截图验证 → 循环</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>让模型像人一样操作电脑的核心循环。Anthropic 于 2024-10 随 Claude 3.5 Sonnet 首发 computer use，工具族为 <code class="inl">computer</code> + <code class="inl">bash</code> + <code class="inl">text_editor</code>；截至 2026 年现行 beta header 为 <code class="inl">computer-use-2025-11-24</code>（支持 Claude Sonnet 5、Opus 4.8/4.7/4.6/4.5、Sonnet 4.6）。</p></div>
+          <div class="blk"><h4>怎么工作 · 坐标 grounding 是命门</h4><p>模型分析截图后必须计算出<b>精确像素坐标</b>才能下达 <code class="inl">click(x,y)</code>。Anthropic 明确「训练模型精确数像素至关重要」；OpenAI CUA 则把坐标计算放在其托管虚拟浏览器服务端。两条纯视觉路线的公开对比很能说明难度：<b>OSWorld</b> 上 OpenAI CUA 38.1% vs Anthropic Computer Use 22%（人类基线 72.4%）；<b>WebVoyager</b> 上 CUA 87% vs Anthropic 56%。</p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>屏幕感知方式：</b>纯视觉像素（通用、能对付 Canvas/WebGL，但 vision token 贵 3–5 倍）vs 解析 DOM/无障碍树（便宜可靠但对自绘组件失效）。共识是混合——DOM 优先、视觉兜底。</div>
+            <div class="dec"><b>动作粒度：</b>低层坐标点击（通用但易漂移）vs 语义元素点击（给可交互元素编号，模型输出编号而非坐标，更稳）。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>坐标漂移：模型按逻辑分辨率给坐标、执行按物理像素，高分屏必须做 DPI 缩放换算。</li>
+            <li>每步塞入全部历史截图会瞬间撑爆上下文——必须做截图窗口裁剪（只留最近 N 张）。</li>
+            <li>不设步数上限：官方 demo 的循环本身不内置迭代上限，靠调用方兜底，漏加就会无限烧钱。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>单一 VLM 循环、固定分辨率截图、纯坐标点击、默认 ~10 轮上限、无自我纠错。直接抄 Anthropic <code class="inl">computer-use-demo</code> 的 <code class="inl">loop.py</code> 即可跑通。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>多模态融合截图 + 无障碍树、坐标预测经专门训练、动作前置安全暂停、动态分辨率与元素高亮（set-of-marks）、失败自我纠错重试、截图窗口裁剪保 prompt cache。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">02</span>
+          <span class="sum-body"><span class="sum-title">浏览器操控 vs 桌面操控两条路径</span>
+            <span class="sum-sub">视觉像素 · DOM 解析 · 无障碍树——各有取舍</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>「办公 = 在 SaaS 里点点点」的部分走浏览器路径；操作 Excel、ERP、旧式客户端等无 API 的本地应用走桌面路径。<b>能操作任意本地应用</b>正是「数字员工」区别于纯浏览器 agent 的核心。</p></div>
+          <div class="blk"><h4>怎么工作 · 三种浏览器感知</h4><p><b>①视觉/像素</b>（Anthropic Computer Use、OpenAI CUA）：看渲染像素、预测点击坐标，通用但贵，一次任务可能烧 5 万 vision token。<b>②DOM/无障碍树</b>（Playwright MCP、Stagehand、browser-use）：把上千 DOM 节点坍缩成有语义的可交互集合（按钮/链接/表单），更便宜可靠。<b>③桌面 a11y 树</b>（Windows UIA / macOS AX / Linux AT-SPI）：操作本地应用。</p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>路径选择：</b>能用 API 就别用 GUI，能用 DOM 就别用视觉——把纯视觉留给 Canvas/自绘组件与无 API 的长尾系统。</div>
+            <div class="dec"><b>回放 vs 推理：</b>高频固定流程用「录一次、回放」（如 OpenAdapt，健康回放时零模型调用），比每次从头推理省钱，屏幕变化时再用模板匹配/OCR 兜底。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>纯 DOM 选择器一改版就崩；iframe/shadow DOM/动态加载元素难捕获。</li>
+            <li>反自动化检测（登录态、验证码）阻断浏览器路径。</li>
+            <li>桌面纯坐标回放极脆——必须锚定 a11y 元素或图像模板，否则窗口焦点/分辨率一变就失败。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>单一路径（多为 DOM），脆弱选择器，覆盖固定几个网页流程。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>混合架构——优先 DOM/无障碍树，缺失时回退视觉；OpenAI CUA 本身也叠加截图 + DOM + 无障碍树解析；桌面与浏览器双通道，高频流程录制自愈。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">03</span>
+          <span class="sum-body"><span class="sum-title">连接器与 MCP（Model Context Protocol）</span>
+            <span class="sum-sub">让 agent 安全接入企业系统、工具与数据的开放协议层</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>MCP 是 Anthropic 2024-11 开源的开放标准，用统一协议消除 N×M 集成复杂度，让 agent 安全地发现、调用企业工具/API/数据（JSON-RPC 2.0、有状态连接）。2025-12-09 Anthropic 将 MCP 捐给 Linux 基金会旗下新成立的 Agentic AI Foundation（AWS/Google/微软/OpenAI 背书），坐实其成为「agent 工具的 USB-C」。</p></div>
+          <div class="blk"><h4>怎么工作 · 四段循环</h4><p>agent 作为 MCP Host/Client 连一批 MCP Server：schema 注入 context → 模型选工具 → 确定性代码执行 → 结果回注 context 形成反馈闭环。2025-06 规范把 MCP server 定义为 <b>OAuth 2.1 资源服务器</b>，要求客户端实现 Resource Indicators（RFC 8707）；<b>Streamable HTTP</b> 成为远程生产级传输标准（多并发、水平扩展、企业 OAuth）。分工上：MCP 负责「协议层/工具发现调用」，Connector/API 是具体后端实现（Atlassian、Salesforce、SAP 已出产品级 MCP 连接器）。</p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>GUI 操控 vs 直连 API：</b>有 API 优先直连（快、稳、可鉴权），GUI 操控留给没有 API 的系统。WorkBuddy 企业版正是基于腾讯云 One ID 通过 Connector 接 OA/CRM/项目管理，并支持 MCP。</div>
+            <div class="dec"><b>工具数量：</b>工具太多会导致选择困难、context 膨胀——需按需加载/分组。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>MCP Server 是新攻击面（prompt injection、越权），需配凭证隔离与审计（见组件 05）。</li>
+            <li>本地 stdio server 无鉴权，直接上生产 = 越权风险。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>本地 stdio server、无鉴权、单用户，接几个只读工具。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>远程 Streamable HTTP + OAuth 2.1 + MCP Gateway + 审计 + 凭证隔离；企业就绪（SSO、审计轨迹、配置可移植）。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">04</span>
+          <span class="sum-body"><span class="sum-title">技能生态（Agent Skills / OpenClaw Skills）</span>
+            <span class="sum-sub">把可复用工作流打包成可移植文件夹，按需自动加载</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>Skills 把可复用工作流、领域知识、新能力打包成<b>可移植文件夹</b>（含 <code class="inl">SKILL.md</code> 指令 + 脚本 + 资源），agent 按需自动发现调用。Anthropic 于 2025-10-16 首发 Agent Skills，并于 <b>2025-12-18 正式作为开放标准发布</b>（规范 + SDK），号称同一 Skill 可在 Claude.ai / Claude Code / API，以及 Codex、Gemini CLI、Copilot、Cursor 等 20+ 平台通用。<b>OpenClaw</b> 是与之并行的开放 Agent Skills 生态；腾讯 WorkBuddy 兼容 OpenClaw 规范。</p></div>
+          <div class="blk"><h4>怎么工作 · 渐进式披露</h4><p>启动时只读每个 skill 的 name + description（约 100 token/个），任务匹配才加载正文（workflow、脚本、schema、API 文档）——用极小的常驻开销换按需的完整能力。腾讯为中国用户建的 <b>SkillHub</b> 是 OpenClaw 官方 ClawHub 的本土化高速镜像，已聚合<b>超 1.3 万个 Skills</b>，并将 10+ 腾讯自有产品做了 skill 化。<span class="note-flag">注：网传「腾讯自有 7 万 Skills」为讹传，已按镜像口径更正</span></p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>常驻 vs 按需：</b>把所有指令塞进 system prompt（简单但吃 token、稀释指令遵从）vs 渐进式披露（只在需要时加载）。成熟系统一律选后者。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>description 写不好 → 该触发时不触发。</li>
+            <li>技能里嵌可执行脚本 = 供应链风险，需审计与沙箱。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>单个 prompt 片段、手动挂载。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>渐进式披露、公司级 Skill 库、跨平台标准化分发、使用即沉淀（流程自动转化为可复用 Skill，WorkBuddy 的「知识飞轮」）。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">05</span>
+          <span class="sum-body"><span class="sum-title">权限、沙箱、审计与人类在环（HITL）</span>
+            <span class="sum-sub">让 agent「安全地」动真实系统——危险处停下等人</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>把「能跑 demo」变成「敢进生产」的那一层。包含四件事：沙箱隔离、凭证隔离、权限模型、HITL 审批门 + 不可篡改审计。这是数字员工进入财务/人事等高风险流程的准入条件。</p></div>
+          <div class="blk"><h4>怎么工作</h4><p><b>沙箱：</b>Manus 把 agent 放进完全隔离的 Ubuntu 虚拟机；2026 主流用 MicroVM / gVisor 做一次性可弃环境。<b>凭证隔离：</b>Anthropic Managed Agents 让凭证<b>绝不进入沙箱</b>——OAuth token 存 secure vault，仅经 harness 看不见的 MCP proxy 访问。<b>HITL：</b>金融交易、数据删除、对外发送等不可逆动作需显式人类批准，审批清单含意图、数据血缘、权限链、影响半径、回滚方案。Cowork 的 Manual/Auto/Skip 三档、WorkBuddy 的「任务拆解后需用户确认 + 自动拦截高危操作」都是这层的产品化。</p></div>
+          <div class="blk"><h4>关键设计抉择</h4><div class="decisions">
+            <div class="dec"><b>权限 vs 沙箱是两道不重叠的闸：</b>权限决定执行前「能不能做」，沙箱决定执行后「能碰什么」，两者都要。</div>
+            <div class="dec"><b>强制下沉：</b>prompt 级 → 应用级 → OS/内核级。安全关键规则往下迁，别信任模型配合。</div>
+          </div></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>确认疲劳（confirmation fatigue）——批得太频繁，用户就闭眼点同意，HITL 形同虚设。</li>
+            <li>HITL Dialog Forging 攻击：伪造确认框内容骗批准——确认内容必须可信渲染、不可被 agent 篡改。</li>
+            <li>间接提示注入：把恶意指令藏进文件注释/工单描述/API 返回等数据通道，agent 当合法指令执行真实动作。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>本地直接执行、无沙箱、危险动作一律 y/n 确认、基本日志。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>一次性可弃沙箱 + 凭证保险库 + 不可篡改审计 + 分级 HITL + 反向模型 sanity check；符合 EU AI Act 第 14 条的可干预/停止/覆盖接口。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">06</span>
+          <span class="sum-body"><span class="sum-title">数字员工模型（身份 / 权限 / 记忆 / 长任务）</span>
+            <span class="sum-sub">脑—手解耦：让 agent 有持久身份、崩溃可续、独立伸缩</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>把一次性会话升级为有身份、有记忆、能长时运行的「员工」。Anthropic Managed Agents 的<b>脑—手解耦</b>是代表架构：把「脑」（模型 + harness）与「手」（沙箱 + 工具）分离，各自独立伸缩与故障恢复。</p></div>
+          <div class="blk"><h4>怎么工作 · 三大虚拟化组件</h4><p><b>Session：</b>append-only 事件日志，durable 存于 harness 之外（<code class="inl">emitEvent</code>/<code class="inl">wake</code>/<code class="inl">getSession</code> 恢复）。<b>Harness：</b>无状态编排循环，崩溃后从最后事件续跑。<b>Sandbox：</b>可弃执行环境。效果：容器按需供给、推理无需等容器初始化，<b>p50 TTFT 降约 60%、p95 降超 90%</b>。「Many brains, many hands」——多 harness 连多 sandbox，脑可互传手。</p></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>无持久身份 → 任务失败即丢、无法审计追责。</li>
+            <li>长任务的登录态/会话保活未处理，跑一半掉线。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>无持久身份、任务失败即丢、单进程。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>持久 Session 作上下文对象、任意切片回放、跨设备恢复、企业身份/权限绑定、崩溃续跑。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">07</span>
+          <span class="sum-body"><span class="sum-title">多 Agent 编排与并行</span>
+            <span class="sum-sub">编排者-工人模式：拆任务、并行执行、综合校验</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>用「规划 + 执行 + 验证」分工处理复杂长任务。主流是 <b>orchestrator-worker（编排者-工人）</b>：lead agent 拆任务，并行 spawn N 个各带独立上下文、窄系统提示的 subagent，收集输出后综合。WorkBuddy 的「多 Agents 并行」、Manus 的多 agent 架构、Anthropic 多 agent 研究系统都是此模式；2026 层面还叠加 <b>A2A（Agent-to-Agent）协议</b>。</p></div>
+          <div class="blk"><h4>怎么工作</h4><p>planner 拆解 → 多 executor 并行/串行执行 → verifier 校验结果，失败回退重规划。并行 subagent 各带独立上下文可降低幻觉、提高覆盖。企业对多 agent 的关注度暴涨——Gartner 称相关咨询量从 2024 Q1 到 2025 Q2 增长 <b>1445%</b>（客户问询量，非部署量）。</p></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>agent 间上下文传递丢失、错误级联。</li>
+            <li>成本随 agent 数增长——数据未证明复杂性之前，优先单 agent。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>单 agent 串行。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>并行隔离上下文、消息传递协作、确定性工作流编排、A2A 跨 agent 互操作。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">08</span>
+          <span class="sum-body"><span class="sum-title">云端异步执行 vs 本地执行</span>
+            <span class="sum-sub">合上笔记本任务继续跑——数字员工的核心体验</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>决定 agent 在「哪台机器、你在不在场」运行。这是 2026 年最能拉开体验的一维。</p></div>
+          <div class="blk"><h4>怎么工作</h4><p><b>本地/桌面：</b>用你的权限操作你眼前的机器（读写文件、跑 shell）。Anthropic <b>Dispatch</b>（2026-03-17 研究预览）把手机任务路由到本机 Claude Desktop 执行。WorkBuddy 桌面端直接访问本地文件。<b>云端/远程：</b>Claude <b>Cowork</b> 于 2026-07-07 走出桌面 App，会话在 Anthropic 服务器远程执行并存到账户——工位起任务、手机看进度、稍后取结果，关机后仍继续、定时任务无需在线设备。Manus/WorkBuddy 企业版的数字员工同样云端常驻。</p></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>长任务的登录态保活、成本与超时控制。</li>
+            <li>失败任务的可恢复性（需配合组件 06 的持久 Session）。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>仅本地同步、关机即停。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>云端持久会话 + 定时/调度 + 跨设备接力 + 本地/云混合，每任务独立云沙箱。</p></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">09</span>
+          <span class="sum-body"><span class="sum-title">上下文与记忆</span>
+            <span class="sum-sub">长任务不触顶、跨会话不失忆</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="blk"><h4>是什么</h4><p>长任务下工具结果/推理/消息累积会触顶 token 上限，且存在 <b>context rot</b>（token 越多、召回越差）。管理分两层：会话内的<b>压缩（compaction）</b>与跨会话的<b>长期记忆</b>。</p></div>
+          <div class="blk"><h4>怎么工作</h4><p><b>压缩：</b>接近窗口上限时把早期历史摘要成紧凑状态，agent 从摘要 + 近期上下文续跑。Anthropic 已在 <b>Claude Opus 4.6</b> 产品化平台侧自动上下文压缩（beta），目标做到「上下文感觉无限」。<b>记忆：</b>三层——工作记忆（当前会话）、情景记忆（完整事件流）、长期记忆（片段 → embedding → 向量库 → top-k 检索）；2026 前沿是图谱记忆（向量解决「相似性」、图谱解决「关系性」，支持多跳推理）。</p></div>
+          <div class="blk"><h4>常见陷阱</h4><ul class="clean risk">
+            <li>只用 input_tokens 计量窗口——cache-creation/cache-read/待输出都占窗口，少算就硬溢出。</li>
+            <li>记忆污染/过期事实、无遗忘导致检索噪声、PII 落库的隐私合规。</li>
+          </ul></div>
+          <div class="mvp">
+            <div class="box mvp-b"><div class="t">MVP</div><p>单一上下文窗口、满了就截断。</p></div>
+            <div class="box mature"><div class="t">成熟版</div><p>自动 compaction + 外置 Session 事件日志 + 向量/图谱记忆 + 工具结果清理 + 缓存高效上下文管理。</p></div>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">04</span><span class="eyebrow">从零到成熟 · 10 个阶段</span></div>
+      <h2>从零构建一个 WorkBuddy 类 agent</h2>
+      <p>核心工程直觉：<b>先把最小「感知-决策-执行」闭环跑通，再逐层加壳</b>（浏览器 → 桌面 → 连接器 → 技能 → 沙箱/HITL → 记忆 → 多 agent → 云端 → 评估）。每个阶段都应可独立运行、可回归测试。参考实现来自 Anthropic <code class="inl">computer-use-demo</code>、browser-use、OpenAdapt、Manus。点击展开每阶段的目标 / 构建步骤 / 可复用选型 / 验收标准 / 常见坑。</p>
+    </div>
+    <div class="acc">
+
+      <details class="item" open>
+        <summary>
+          <span class="sum-key">0</span>
+          <span class="sum-body"><span class="sum-title">最小 Perceive-Act 循环</span>
+            <span class="sum-sub">截图 → 模型 → 单步动作 → 再截图，所有 computer-use agent 的原子内核</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>跑通「截图 → 多模态模型 → 一个动作（click/type）→ 再截图」，内化控制结构，此刻不必有用。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>抓屏（<code class="inl">mss</code>/<code class="inl">pyautogui</code>）→ base64 编码 → 调用带 <code class="inl">computer</code> 工具的模型。</li>
+            <li>模型返回 <code class="inl">action</code> + <code class="inl">coordinate</code> → 本地执行鼠标键盘 → 把新截图作为 <code class="inl">tool_result</code> 回传。</li>
+            <li>循环直到模型不再请求工具即视为完成；加硬 <code class="inl">max_steps</code> 防死循环。</li>
+          </ul></div>
+          <div class="learn"><b>可复用选型 · </b>直接抄 <code class="inl">anthropics/anthropic-quickstarts</code> 的 <code class="inl">computer_use_demo/loop.py</code>——它演示了工具版本分组、异步工具执行、以及 <code class="inl">_maybe_filter_to_n_most_recent_images()</code>（只留最近 N 张截图省 token/保 prompt cache）。self-operating-computer 是更精简的纯视觉起点。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>能在记事本里输入指定文字、点开一个桌面图标，循环干净退出、永不挂起。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>loop.py 官方实现<b>不内置迭代上限</b>，必须自加 max_steps。</li>
+              <li>高分屏坐标缩放（逻辑分辨率 vs 物理像素）。</li>
+              <li>每步塞全部历史截图会爆 context——务必裁剪图像窗口。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">1</span>
+          <span class="sum-body"><span class="sum-title">浏览器操控（DOM 优先）</span>
+            <span class="sum-sub">覆盖「办公 = 在 SaaS 里点点点」的大部分场景</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>让 agent 可靠操作网页（比盲点像素更稳）。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>每步把浏览器状态（URL、索引化的可交互元素列表/AXTree、DOM、截图）喂给模型。</li>
+            <li>模型返回结构化输出：对上一步的评估 + memory 进度 + 下一子目标 + 动作（输出元素编号而非 CSS selector）。</li>
+          </ul></div>
+          <div class="learn"><b>可复用选型 · </b><code class="inl">browser-use</code>（Python/MIT，GitHub 约 10.6 万 star，WebVoyager 报告 89.1%；底层已从 Playwright 迁到直连 CDP + 事件驱动 watchdog 架构）。办公场景<b>先 DOM 后视觉兜底</b>最划算。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>完成「登录内部系统 → 搜索 → 导出表格」这类 3-5 步网页流程。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>纯 DOM 遇 canvas/自绘组件失效，需视觉 fallback。</li>
+              <li>动态加载/iframe/shadow DOM 元素捕获；反自动化检测（验证码）。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">2</span>
+          <span class="sum-body"><span class="sum-title">桌面操控 + 录制式自愈</span>
+            <span class="sum-sub">覆盖非浏览器的本地应用（Excel、ERP、旧系统）</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>操作无 API 的本地桌面软件——这是「数字员工」区别于纯浏览器 agent 的核心。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>接入 OS 级鼠标键盘 + 可访问性树（Windows UIA / macOS AX / Linux AT-SPI）。</li>
+            <li>对高频重复流程引入「录一次、回放」，屏幕变化时用模板匹配/OCR 兜底。</li>
+          </ul></div>
+          <div class="learn"><b>可复用选型 · </b><code class="inl">OpenAdapt</code>——把一次人工演示编译成自愈脚本，健康回放时<b>零模型调用</b>（比每次从头推理省钱），配套 <code class="inl">openadapt-agent</code> 提供安全门/HITL/审计。这是「贵的通用 agent」与「便宜的确定性 RPA」之间的关键混合选型。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>在无 API 的桌面软件里完成一段可回放的多步操作。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>坐标漂移、窗口焦点丢失、跨分辨率/DPI。</li>
+              <li>纯坐标回放极脆，必须锚定 a11y 元素或图像模板。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">3</span>
+          <span class="sum-body"><span class="sum-title">工具 / 连接器（MCP）</span>
+            <span class="sum-sub">有 API 就直连 API，接企业系统（CRM、邮件、日历、DB）</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>把「靠 GUI 点」升级为「有 API 就直连」——快、稳、可鉴权。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>agent 作 MCP Host/Client，连一批 MCP Server；四段循环：schema 注入 → 模型选工具 → 确定性执行 → 结果回注。</li>
+            <li>建工具注册表与 schema 注入器；能用 API 就别用 GUI，GUI 留给没有 API 的长尾系统。</li>
+          </ul></div>
+          <div class="learn"><b>可复用选型 · </b>MCP（Anthropic 2024-11 开放标准，2026 已是「任何认真用工具的 LLM 系统的基础设施」，已捐给 Linux 基金会 AAIF）。Atlassian/Salesforce/SAP 等已出产品级 MCP 连接器。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>一句话「把这封邮件的要点建成日历事件」跨两个连接器完成。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>工具过多导致选择困难/context 膨胀。</li>
+              <li>MCP Server 是新攻击面（prompt injection、越权），需在 Stage 5 加固。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">4</span>
+          <span class="sum-body"><span class="sum-title">技能系统（Skills）</span>
+            <span class="sum-sub">把领域 SOP 沉淀为可复用、按需加载的知识</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>避免把所有指令塞进系统提示，把流程沉淀成可插拔技能。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>采用 <code class="inl">SKILL.md</code> + 渐进式披露：启动只读 name+description（约 100 token/个），任务匹配才加载正文。</li>
+            <li>建技能目录、YAML frontmatter 索引、按需加载器、可执行脚本挂载。</li>
+          </ul></div>
+          <div class="learn"><b>可复用选型 · </b>Claude Agent Skills（2025-10 首发功能、2025-12-18 作为开放标准发布，文件系统式架构）；或兼容 OpenClaw 生态复用社区技能（WorkBuddy 路线）。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>新增一个「报销审批 SOP」技能后，agent 能零改代码执行该流程。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>description 写不好 → 该触发时不触发。</li>
+              <li>技能里嵌可执行脚本 = 供应链风险。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">5</span>
+          <span class="sum-body"><span class="sum-title">权限沙箱 + HITL（人在环）</span>
+            <span class="sum-sub">危险动作前暂停等人批准，隔离执行、全程审计</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>让 agent「安全地」动真实系统——这是进生产的准入条件。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>动作分级（只读/写/不可逆）；不可逆动作（发送、付款、删除）强制 HITL 确认。</li>
+            <li>隔离执行环境（容器/独立 VM）+ 全程不可篡改审计日志；关键动作用「双因子判断」（人审 + 反向模型 sanity check）。</li>
+          </ul></div>
+          <div class="learn"><b>参考规范 · </b>EU AI Act 第 14 条要求高风险系统提供可「干预、停止、覆盖」的人机接口；凭证隔离参考 Anthropic Managed Agents（凭证绝不进沙箱，经 MCP proxy 访问）。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>agent 试图发外部邮件时必弹确认并可拒绝；沙箱内操作不影响宿主。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>确认疲劳——批得太频繁就闭眼点同意。</li>
+              <li>Dialog Forging：确认框内容被 agent 篡改骗批准，须可信渲染。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">6</span>
+          <span class="sum-body"><span class="sum-title">记忆</span>
+            <span class="sum-sub">跨任务/会话复用偏好与事实，从「金鱼」变「老搭档」</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>第二次接同类任务时无需重复告知偏好。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>三层：工作记忆（会话 sliding window）、情景记忆（完整事件流）、长期记忆（片段 → embedding → 向量库 → top-k 检索）。</li>
+            <li>加巩固/索引/更新/遗忘的生命周期管理；进阶引入图谱记忆做多跳推理。</li>
+          </ul></div>
+          <div class="learn"><b>2026 前沿 · </b>图谱记忆崛起（向量管「相似性」、图谱管「关系性」）；MUSE 等框架演化出「规划-执行-反思-记忆」闭环。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>第二次接同类任务时自动沿用已知偏好/事实。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>记忆污染/过期事实、无遗忘导致检索噪声。</li>
+              <li>PII 落库的隐私合规。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">7</span>
+          <span class="sum-body"><span class="sum-title">多 Agent 编排</span>
+            <span class="sum-sub">规划 + 执行 + 验证分工，处理复杂长任务</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>一个需 10+ 步、跨 3 个系统的任务端到端交付。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>planner 拆解 → 多 executor 并行/串行 → verifier 校验，失败回退重规划。</li>
+            <li>编排框架可用 LangGraph 类状态机；跨 agent 用 A2A 协议互操作。</li>
+          </ul></div>
+          <div class="learn"><b>可复用选型 · </b>Manus 是范式样板（规划/执行/验证 agent 协作，全程在独立 VM 内跑）。仅当实测出现漂移/协调失败时才加多 agent 仪式。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>跨 3 个系统的 10+ 步任务端到端交付成品。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>agent 间上下文传递丢失、错误级联。</li>
+              <li>成本随 agent 数指数增长。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">8</span>
+          <span class="sum-body"><span class="sum-title">云端异步执行</span>
+            <span class="sum-sub">任务扔上去人可下线，跑完再推送——数字员工的核心体验</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>关浏览器后台仍跑完并推送通知。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>每个任务分配独立云沙箱/VM，工具调用全在云端完成（无需本地装软件）。</li>
+            <li>异步任务队列 + 完成推送 + 定时/调度；配合 Stage 6 的持久 Session 做可恢复。</li>
+          </ul></div>
+          <div class="learn"><b>可复用选型 · </b>Manus 模式（任务全在云沙箱、离线异步、完成推送）；沙箱基座可用 E2B/Firecracker 类微 VM。Cowork 的云端后台运行是产品级参照。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>关闭客户端后台仍跑完，结果推送到多设备。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>长任务的会话/登录态保活、成本与超时控制。</li>
+              <li>失败任务的可恢复性。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <span class="sum-key">9</span>
+          <span class="sum-body"><span class="sum-title">评估与回归</span>
+            <span class="sum-sub">量化「改了 prompt/模型后是变好还是变差」，防回归</span></span>
+          <span class="sum-caret">+</span>
+        </summary>
+        <div class="item-detail">
+          <div class="rm-goal"><b>目标 · </b>每次发版产出可对比的「成功率 / 步数 / 成本」三联指标。</div>
+          <div class="blk"><h4>构建步骤</h4><ul class="clean">
+            <li>搭 CI 化评估集：标准 benchmark + 自建业务任务集，多次运行取均值（单次报分会虚高 5-15 分）。</li>
+            <li>把安全 red-team 与「带策略完成率」纳入回归，要求单调改善或给明确权衡理由。</li>
+          </ul></div>
+          <div class="learn"><b>可复用基准 · </b>OSWorld / OSWorld 2.0（真实桌面、长程）、WebArena / WebVoyager（浏览器）、TheAgentCompany（真实办公）、GAIA、ST-WebAgentBench（安全）。详见下一节。</div>
+          <div class="two">
+            <div class="blk"><h4>验收标准</h4><ul class="clean ok"><li>每次发版可对比的成功率/步数/成本三联指标，回归可复现。</li></ul></div>
+            <div class="blk"><h4>常见坑</h4><ul class="clean risk">
+              <li>数据污染与 scaffolding 抬分、单 run 报喜。</li>
+              <li>只测成功率不测成本/步数与安全。</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<section id="eval">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kick"><span class="idx">05</span><span class="eyebrow">现实检验 · 基准 · 风险</span></div>
+      <h2>评估、基准与落地成效：远没到「换掉白领」</h2>
+      <p>衡量数字员工的基准正从「单步准确率」转向「长程、真实环境、带安全约束的任务完成率」。一句话结论：<b>Web 短任务已相当可用（~94%），但长程真实办公仍卡在 20–30% 的天花板</b>——demo 惊艳与生产可靠之间隔着一条鸿沟。</p>
+    </div>
+
+    <div class="tblwrap">
+    <table class="btbl">
+      <thead><tr><th>基准</th><th>测什么</th><th>代表成绩 / SOTA</th><th>人类基线</th></tr></thead>
+      <tbody>
+        <tr><td>OSWorld-Verified</td><td>桌面 computer-use（369 任务）</td><td class="num">Claude Opus 4.7 修正后 82.3%<span class="note-flag">4.8≈83.5% 仅见官方图表</span></td><td class="num">72.4%</td></tr>
+        <tr><td>OSWorld 2.0</td><td>长程真实工作流（108 任务，均 318 次工具调用、中位 1.6h）</td><td class="num lo">Opus 4.8 仅 20.6%（部分分 54.8%）；GPT-5.5 ~13%</td><td>—</td></tr>
+        <tr><td>TheAgentCompany</td><td>真实办公全流程（SE/PM/HR/财务/行政）</td><td class="num lo">Gemini-2.5-Pro 30.3% / GPT-4o 8.6%</td><td>—</td></tr>
+        <tr><td>Windows Agent Arena</td><td>150+ 真实 Windows 应用任务</td><td class="num lo">初版最佳 Navi+GPT-4V 19.5%</td><td class="num">74.5%</td></tr>
+        <tr><td>WebArena</td><td>自托管仿真站点（购物/CMS/GitLab）</td><td class="num">OpAgent 38.1%（pass@5）</td><td>—</td></tr>
+        <tr><td>WebVoyager</td><td>真实线上网站、任务较简单（LLM 判分偏乐观）</td><td class="num hi">Magnitude 93.9% / browser-use 89.1%</td><td>—</td></tr>
+        <tr><td>GDPval</td><td>经济价值产出（1320 任务/44 职业/9 行业）</td><td class="num">Claude Opus 4.1 约 47.6% 产出≥人类专家</td><td>—</td></tr>
+        <tr><td>ST-WebAgentBench</td><td>带策略的安全完成率 CuP（222 任务）</td><td class="num lo">平均 CuP 不足名义完成率 2/3</td><td>—</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="prose" style="color:var(--muted);font-size:13.5px;margin-top:-6px">注：GAIA 分数在不同榜单从 ~45% 到 ~92% 剧烈波动，几乎全来自「模型 + 工具 + 策略」的整套系统差异而非底模——<b>引用 GAIA/OSWorld 分数必须连同具体系统与判分口径</b>，否则无意义。GDPval 的「速度成本约人类 1/100」仅是最理想化裸算（约 90×，且主要指速度）；一旦计入人工审核/修正，现实提速仅约 1.1–1.6×。</p>
+
+    <h3 style="font-size:18px;font-weight:750;margin:38px 0 18px">企业落地该看的四个指标</h3>
+    <div class="princ">
+      <div class="card pr"><span class="no">01</span><p><b>任务完成率 vs 部分完成率。</b>区分「全对」与「部分对」（TAC、OSWorld 2.0 都双报）——长程任务的「部分分」高、「完全完成」低，别被前者误导。</p></div>
+      <div class="card pr"><span class="no">02</span><p><b>人工干预率 / 接管率。</b>HITL 在关键决策必设。厂商宣称的「90% 零人工」多为自家口径，选型时要用自己的流程实测接管率。</p></div>
+      <div class="card pr"><span class="no">03</span><p><b>单任务成本与时延。</b>OSWorld 2.0 显示长任务动辄数百次工具调用，token/延迟是可用性瓶颈；更省 token 的模型往往完成率更低，须权衡。</p></div>
+      <div class="card pr"><span class="no">04</span><p><b>带策略的安全完成率（CuP）。</b>只有「完成且不违反任何策略」才算分——SOTA agent 启用策略后成功数大幅缩水，这是任务型基准完全测不到的缺口。</p></div>
+    </div>
+
+    <h3 style="font-size:18px;font-weight:750;margin:40px 0 18px">失败模式与安全风险</h3>
+    <div class="eval">
+      <div class="card ev">
+        <div class="tag">RISK 1 · 头号威胁</div>
+        <h4>间接提示注入 / 目标劫持</h4>
+        <p>OWASP 于 2025-12-09 发布《Top 10 for Agentic Applications 2026》，把 <b>Agent Goal Hijacking（ASI01）</b> 列为头号风险。把恶意指令藏进文件注释、工单描述、API 返回等<b>数据通道</b>，agent 会当合法指令执行真实动作——比直接注入更危险，因为它披着可信数据的外衣。</p>
+      </div>
+      <div class="card ev">
+        <div class="tag">RISK 2</div>
+        <h4>工具使用错误与幻觉执行</h4>
+        <p>常见 7 类工具错误：调用不足、参数值/名/类型错误、重复调用、幻觉函数名、非法输出格式。表现为「结构合理但语义错误」的动作——比纯文本幻觉更危险，因为它会真的点下去、发出去。</p>
+      </div>
+      <div class="card ev">
+        <div class="tag">RISK 3</div>
+        <h4>规划漂移与失控成本</h4>
+        <p>长任务中计划与执行背离、死循环烧 token、误操作不可逆资源。生产环境必配步数/预算/时钟上限 + 连续失败熔断，并把危险动作强制下沉到 HITL 与 OS 沙箱。</p>
+      </div>
+    </div>
+    <p class="prose" style="margin-top:24px;color:var(--muted);font-size:14.5px">方法：冻结任务集 + red-team 套件，每阶段跑一遍，要求 solve-rate 与安全性单调改善（或给明确权衡理由），同时盯住成本/延迟；记录每个 action/observation 让运行可重放。<b>对企业选型而言</b>：盯 CuP 这类「带策略的完成率」、真实接管率、单任务成本，并把间接提示注入列为首要威胁——而非只看厂商发布会里的 demo 与自述 DAU。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h4>关于这份调研</h4>
+    <p class="cav">本页由一个多智能体 workflow 编排产出：<b>8 个研究智能体</b>并行做联网调研（WorkBuddy 深挖 · Claude Cowork 深挖 · 海外玩家 · 国内玩家 · 技术架构 · 发展史 · 评估基准 · 构建路线图），再对约 <b>87 条易变事实做对抗式独立核实</b>（发现并更正了 SkillHub 规模与性质、WorkBuddy 定价口径、Manus 月活量级、Cowork GA 时点、MiniMax M3 发布时间、多个 benchmark 分数归属等十余处偏差），最后由主循环综合成这份可交互文档。数据反映约 <b>2026 年年中（7 月）</b>的态势。</p>
+    <p class="cav"><b>请注意核实：</b>该领域变动极快，版本号、benchmark 分数、估值、发布/弃用日期、定价等会迅速过时或存在口径差异；带 <span class="note-flag">红色标记</span> 处为已知存疑/未证实项。把本页当作理解<b>品类格局与构建方法</b>的地图，关键决策前请回到各项目官方来源二次确认。</p>
+    <div class="meta">
+      <span>◆ 20+ 产品 / 平台</span><span>◆ 9 架构组件</span><span>◆ 10 阶段路线</span><span>◆ 4 演进世代</span><span>◆ 纯本地 · 零外部依赖</span>
+    </div>
+  </div>
+</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---- 产品阵营 Tab 切换 ---- */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+  function selectCat(cat){
+    tabs.forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.cat === cat)); });
+    panels.forEach(function(p){ if(p.dataset.cat === cat){ p.removeAttribute('hidden'); } else { p.setAttribute('hidden',''); } });
+  }
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){ selectCat(t.dataset.cat); });
+    t.addEventListener('keydown', function(e){
+      if(e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var i = tabs.indexOf(t);
+      var n = e.key === 'ArrowRight' ? (i+1)%tabs.length : (i-1+tabs.length)%tabs.length;
+      tabs[n].focus(); selectCat(tabs[n].dataset.cat);
+    });
+  });
+
+  /* ---- Hero: 感知-行动循环顺序高亮动画 ---- */
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('.loop .node'));
+  if(nodes.length && !reduce){
+    var cur = 0;
+    setInterval(function(){
+      nodes.forEach(function(n){ n.classList.remove('on'); });
+      nodes[cur].classList.add('on');
+      cur = (cur + 1) % nodes.length;
+    }, 950);
+  } else if(nodes.length){
+    nodes.forEach(function(n){ n.classList.add('on'); });
+  }
+
+  /* ---- 目录滚动高亮 (scroll-spy) ---- */
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc .toclink'));
+  var map = {};
+  links.forEach(function(l){ var id = l.getAttribute('href').slice(1); var el = document.getElementById(id); if(el){ map[id] = l; } });
+  var ids = Object.keys(map);
+  if('IntersectionObserver' in window && ids.length){
+    var visible = {};
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ visible[en.target.id] = en.isIntersecting ? en.intersectionRatio : 0; });
+      var best = null, bestR = 0;
+      ids.forEach(function(id){ var r = visible[id] || 0; if(r > bestR){ bestR = r; best = id; } });
+      if(best){ links.forEach(function(l){ l.classList.remove('active'); }); map[best].classList.add('active'); }
+    }, { rootMargin: '-52px 0px -55% 0px', threshold: [0, .25, .5, 1] });
+    ids.forEach(function(id){ io.observe(document.getElementById(id)); });
+  }
+})();
+</script>
